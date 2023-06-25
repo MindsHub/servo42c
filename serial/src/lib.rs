@@ -1,45 +1,53 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 
-//use serialtrait::Sendable;
-
-use serialtrait::Sendable;
+use serialtrait::{Sendable, MySize};
 
 pub mod serialtrait;
 pub mod test;
 pub mod standard;
 
-impl Sendable<4> for u32 {
-    
-    fn as_u8(&self)->[u8; 4] {
-        self.to_le_bytes()
-    }
+int_impl!(i32);
+int_impl!(u32);
+int_impl!(u16);
 
-    fn from_u8(x: [u8; 4])->Self {
-        Self::from_le_bytes(x.try_into().unwrap())
-    }
+impl MySize for u8{}
+impl Sendable for u8 {
 
-    //const SIZE: usize = 1;
-}
-
-
-impl Sendable<1> for u8 {
-
-    fn as_u8(&self)->[u8; 1] {
-        [*self; 1]
+    fn as_u8(self)->[u8; 1] {
+        [self; 1]
     }
 
     fn from_u8(x: [u8; 1])->Self {
         x[0]
     }
 }
-impl<const S: usize> Sendable<S> for [u8; S]{
-    fn as_u8(&self)->[u8; S] {
-        self.clone()
+
+impl MySize for (){}
+impl Sendable for () {
+
+    fn as_u8(self)->[u8; 0] {
+        [0u8; 0]
     }
 
-    fn from_u8(x: [u8; S])->Self {
-        x
+    fn from_u8(_: [u8; 0])->Self {
+        ()
     }
 }
 
+/*
+//type testArray<const S: usize>=[u8; S];
+impl<const S: usize> MySize for [u8; S]{}
+impl<const S: usize> Sendable for [u8; S]{
+    fn as_u8(self)->[u8; Self::SIZE] {
+        let mut y: [u8; Self::SIZE] = [0u8; Self::SIZE];
+        y.copy_from_slice(&self);
+        y
+    }
+
+    fn from_u8(x: [u8; Self::SIZE])->Self {
+        let mut y: [u8; S] = [0u8; S];
+        y.copy_from_slice(&x);
+        y
+    }
+}*/

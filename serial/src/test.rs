@@ -13,13 +13,16 @@ pub struct SerialTest{
 
 impl SerialTest{
     pub fn add_response(&mut self, w: Vec<u8>, r: Vec<u8>){
+        println!("{w:?}->{r:?}");
         self.map.insert(w, r);
     }
 }
 
 impl Serial for SerialTest{
     fn read(&mut self, buf: &mut [u8])->Result<(), crate::serialtrait::SerialError> {
+        
         if let Some(mut x) = self.response.take(){
+            println!("read: {x:?} {}->{}", x.len(), buf.len());
             if x.len()!=buf.len(){
                 return Err(SerialError::Undefined);
             }
@@ -30,6 +33,7 @@ impl Serial for SerialTest{
         }
     }
     fn write(&mut self, buf: &[u8])->Result<(), crate::serialtrait::SerialError> {
+        println!("send: {buf:?}");
         if let Some(val)= self.map.get(buf){
             self.response=Some(val.clone());
             Ok(())

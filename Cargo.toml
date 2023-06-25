@@ -3,3 +3,5 @@ members=["motor", "serial"]
 
 [workspace.dependencies]
 serial2 = "0.2.1"
+
+#workspace.resolver = "1"
