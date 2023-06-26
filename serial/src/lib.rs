@@ -8,6 +8,7 @@ pub mod test;
 pub mod standard;
 
 int_impl!(i32);
+int_impl!(i16);
 int_impl!(u32);
 int_impl!(u16);
 
@@ -31,7 +32,6 @@ impl Sendable for () {
     }
 
     fn from_u8(_: [u8; 0])->Self {
-        ()
     }
 }
 

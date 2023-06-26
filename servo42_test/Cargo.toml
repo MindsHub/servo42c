@@ -1,0 +1,10 @@
+[package]
+name="servo42-test"
+version="0.1.0"
+edition="2021"
+publish=false
+
+[dependencies]
+eframe="0.22.0"
+motor={path="../motor"}
+serial={path="../serial"}

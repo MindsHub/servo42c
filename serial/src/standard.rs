@@ -1,14 +1,32 @@
-use std::io::Read;
+pub use std::io::Read;
 
 use super::serialtrait::*;
-use serial2::*;
+pub use serialport::*;
+pub use serialport;
 
-impl Serial for SerialPort{
-    fn read(&mut self, buf: &mut [u8])->Result<(), SerialError> {
-        self.read_exact(buf).map_err(|_| SerialError::Undefined)
+impl Serial for Box<dyn SerialPort+'static>
+{
+    fn read(&mut self, buf: &mut [u8])->std::result::Result<(), SerialError> {
+        let mut y = 0usize;
+        loop{
+            
+            if let Ok(x) =std::io::Read::read(self, &mut buf[y..]){
+                y+=x;
+            }
+            println!("readen {buf:?}");
+            if y>=buf.len(){
+                break;
+            }
+        }
+        //self.read_to_end(buf).map_err(|_|SerialError::Undefined)?;
+        //self.read(buf).map_err(|_|SerialError::Undefined)?;
+        println!("readen {buf:?}");
+        Ok(())
     }
 
-    fn write(&mut self, buf: &[u8])->Result<(), SerialError> {
-        self.write_all(buf).map_err(|_| SerialError::Undefined)
+    fn write(&mut self, buf: &[u8])->std::result::Result<(), SerialError> {
+        self.write_all(buf).map_err(|_|SerialError::Undefined)?;
+        println!("written {buf:?}");
+        Ok(())
     }
 }

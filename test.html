@@ -1,0 +1,223 @@
+
+<h1 id="egui-rust-widget-tipstricks">egui Rust widget tips/tricks</h1>
+<p>create scroll widget within a window in Rust</p>
+<ul>
+<li><a href="https://docs.rs/egui/latest/egui/widgets/struct.SelectableLabel.html" class="uri">https://docs.rs/egui/latest/egui/widgets/struct.SelectableLabel.html</a></li>
+</ul>
+<h2 id="where-to-find-information">Where to find information?</h2>
+<ul>
+<li>Use the docs.rs search bar <a href="https://docs.rs/egui/latest/egui/" class="uri">https://docs.rs/egui/latest/egui/</a></li>
+</ul>
+<h2 id="widgets">Widgets</h2>
+<h3 id="radio">Radio</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="at">#[</span>derive<span class="at">(</span><span class="bu">PartialEq</span><span class="at">)]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">enum</span> Enum <span class="op">{</span> First<span class="op">,</span> Second<span class="op">,</span> Third <span class="op">}</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">let</span> <span class="kw">mut</span> my_enum <span class="op">=</span> <span class="pp">Enum::</span>First<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>ui<span class="op">.</span>radio_value(<span class="op">&amp;</span><span class="kw">mut</span> my_enum<span class="op">,</span> <span class="pp">Enum::</span>First<span class="op">,</span> <span class="st">&quot;First&quot;</span>)<span class="op">;</span></span></code></pre></div>
+<h3 id="scrollarea">Scrollarea</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">eframe::egui::</span>ScrollArea<span class="op">;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="pp">ScrollArea::</span>vertical()<span class="op">.</span>show(ui<span class="op">,</span> <span class="op">|</span>ui<span class="op">|</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="co">// insert your widgets here</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
+<h3 id="floating-window">Floating window</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="pp">egui::Window::</span>new(<span class="st">&quot;Window&quot;</span>)<span class="op">.</span>show(ctx<span class="op">,</span> <span class="op">|</span>ui<span class="op">|</span> <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>    ui<span class="op">.</span>label(<span class="st">&quot;They are automatically sized based on contents.&quot;</span>)<span class="op">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    ui<span class="op">.</span>label(<span class="st">&quot;You can turn on resizing and scrolling if you like.&quot;</span>)<span class="op">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    ui<span class="op">.</span>label(<span class="st">&quot;You would normally chose either panels OR windows.&quot;</span>)<span class="op">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
+<h3 id="external-widget">External widget</h3>
+<ul>
+<li>Date picker : <a href="https://crates.io/crates/egui-datepicker" class="uri">https://crates.io/crates/egui-datepicker</a></li>
+<li>Memory editor/hexdump : <a href="https://crates.io/crates/egui_memory_editor" class="uri">https://crates.io/crates/egui_memory_editor</a></li>
+<li>Integrate Tracing: <a href="https://crates.io/crates/tracing-egui" class="uri">https://crates.io/crates/tracing-egui</a></li>
+<li>[BEST] Tune value without recompilation: <a href="https://github.com/jakobhellermann/bevy-inspector-egui" class="uri">https://github.com/jakobhellermann/bevy-inspector-egui</a> <a href="https://crates.io/crates/bevy-inspector-egui-derive" class="uri">https://crates.io/crates/bevy-inspector-egui-derive</a></li>
+<li>Tune values without recompilation: <a href="https://crates.io/crates/nannou_egui" class="uri">https://crates.io/crates/nannou_egui</a></li>
+<li>HTTTP Backend - <a href="https://crates.io/crates/epi_http" class="uri">https://crates.io/crates/epi_http</a></li>
+<li>real egui inspect - https://github.com/crumblingstatue/egui-inspect</li>
+</ul>
+<h3 id="plot">Plot</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">pub</span> <span class="kw">struct</span> MyPlot <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>    show_axes<span class="op">:</span> [<span class="dt">bool</span><span class="op">;</span> <span class="dv">2</span>]<span class="op">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    allow_drag<span class="op">:</span> <span class="dt">bool</span><span class="op">,</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    allow_zoom<span class="op">:</span> <span class="dt">bool</span><span class="op">,</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    center_x_axis<span class="op">:</span> <span class="dt">bool</span><span class="op">,</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    center_y_axis<span class="op">:</span> <span class="dt">bool</span><span class="op">,</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>    width<span class="op">:</span> <span class="dt">f32</span><span class="op">,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>    height<span class="op">:</span> <span class="dt">f32</span><span class="op">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a><span class="op">}</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a><span class="kw">impl</span> <span class="bu">Default</span> <span class="kw">for</span> MyPlot <span class="op">{</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>    <span class="kw">fn</span> default() <span class="op">-&gt;</span> <span class="dt">Self</span> <span class="op">{</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>        <span class="dt">Self</span> <span class="op">{</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>            show_axes<span class="op">:</span> [<span class="cn">true</span><span class="op">,</span> <span class="cn">true</span>]<span class="op">,</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>            allow_drag<span class="op">:</span> <span class="cn">true</span><span class="op">,</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a>            allow_zoom<span class="op">:</span> <span class="cn">true</span><span class="op">,</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a>            center_x_axis<span class="op">:</span> <span class="cn">false</span><span class="op">,</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a>            center_y_axis<span class="op">:</span> <span class="cn">false</span><span class="op">,</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a>            width<span class="op">:</span> <span class="dv">300.0</span><span class="op">,</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true"></a>            height<span class="op">:</span> <span class="dv">200.0</span><span class="op">,</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true"></a>        <span class="op">}</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true"></a>    <span class="op">}</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true"></a><span class="op">}</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true"></a>    <span class="kw">fn</span> example_plot(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> ui<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> <span class="pp">egui::</span>Ui) <span class="op">-&gt;</span> <span class="pp">egui::</span>Response <span class="op">{</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true"></a>        <span class="kw">use</span> <span class="pp">egui::plot::</span><span class="op">{</span>Line<span class="op">,</span> Value<span class="op">,</span> Values<span class="op">};</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true"></a>        <span class="kw">let</span> n <span class="op">=</span> <span class="dv">128</span><span class="op">;</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true"></a>        <span class="kw">fn</span> sigmoid(x<span class="op">:</span> <span class="dt">f64</span>) <span class="op">-&gt;</span> <span class="dt">f64</span> <span class="op">{</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true"></a>            <span class="op">-</span><span class="dv">1.0</span> <span class="op">+</span> <span class="dv">2.0</span> <span class="op">/</span> (<span class="dv">1.0</span> <span class="op">+</span> <span class="dt">f64</span><span class="pp">::</span>exp(<span class="op">-</span>x))</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true"></a>        <span class="op">}</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true"></a>        <span class="kw">let</span> line <span class="op">=</span> <span class="pp">Line::</span>new(<span class="pp">Values::</span>from_values_iter((<span class="dv">0</span><span class="op">..=</span>n)<span class="op">.</span>map(<span class="op">|</span>i<span class="op">|</span> <span class="op">{</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true"></a>            <span class="kw">use</span> <span class="pp">std::</span><span class="dt">f64</span><span class="pp">::consts::</span>TAU<span class="op">;</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true"></a>            <span class="kw">let</span> x <span class="op">=</span> <span class="pp">egui::</span>remap(i <span class="kw">as</span> <span class="dt">f64</span><span class="op">,</span> <span class="dv">0.0</span><span class="op">..=</span>n <span class="kw">as</span> <span class="dt">f64</span><span class="op">,</span> <span class="op">-</span>TAU<span class="op">..=</span>TAU)<span class="op">;</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true"></a>            <span class="pp">Value::</span>new(x<span class="op">,</span> sigmoid(x))</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true"></a>        <span class="op">}</span>)))<span class="op">;</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true"></a></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true"></a>        <span class="kw">let</span> s <span class="op">=</span> <span class="pp">MyPlot::</span><span class="kw">default</span>()<span class="op">;</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true"></a>        <span class="kw">let</span> response <span class="op">=</span> <span class="pp">egui::plot::Plot::</span>new(<span class="st">&quot;example_plot&quot;</span>)</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true"></a>            <span class="op">.</span>show_axes(s<span class="op">.</span>show_axes)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true"></a>            <span class="op">.</span>allow_drag(s<span class="op">.</span>allow_drag)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true"></a>            <span class="op">.</span>allow_zoom(s<span class="op">.</span>allow_zoom)</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true"></a>            <span class="op">.</span>center_x_axis(s<span class="op">.</span>center_x_axis)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true"></a>            <span class="op">.</span>center_x_axis(s<span class="op">.</span>center_y_axis)</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true"></a>            <span class="op">.</span>width(s<span class="op">.</span>width)</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true"></a>            <span class="op">.</span>height(s<span class="op">.</span>height)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true"></a>            <span class="op">.</span>data_aspect(<span class="dv">1.0</span>)</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true"></a>            <span class="op">.</span>show(ui<span class="op">,</span> <span class="op">|</span>plot_ui<span class="op">|</span> plot_ui<span class="op">.</span>line(line))</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true"></a>            <span class="op">.</span>response<span class="op">;</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true"></a>        <span class="kw">self</span><span class="op">.</span>add_context_menu(response)</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true"></a>    <span class="op">}</span></span></code></pre></div>
+<h3 id="context-menu">Context menu</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a>    <span class="kw">fn</span> add_context_menu(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> response<span class="op">:</span> Response) <span class="op">-&gt;</span> Response <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>      response<span class="op">.</span>context_menu(<span class="op">|</span>ui<span class="op">|</span> <span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>          <span class="kw">if</span> ui<span class="op">.</span>button(<span class="st">&quot;Open...&quot;</span>)<span class="op">.</span>clicked() <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>          ui<span class="op">.</span>close_menu()<span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>          <span class="op">}</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>          ui<span class="op">.</span>menu_button(<span class="st">&quot;Plot&quot;</span><span class="op">,</span> <span class="op">|</span>ui<span class="op">|</span> <span class="op">{</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>              ui<span class="op">.</span>label(<span class="st">&quot;menu 1&quot;</span>)<span class="op">;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>              ui<span class="op">.</span>label(<span class="st">&quot;menu 2&quot;</span>)<span class="op">;</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>              <span class="co">// you can add ui.radio_value or other widgets here</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>              <span class="op">}</span>)<span class="op">;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>          <span class="op">}</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    <span class="op">}</span></span></code></pre></div>
+<h3 id="user-interaction-on-a-shape">User interaction on a shape</h3>
+<p>ui.interact( ui.rect_contains_pointer( ui.contains_pointer(&amp;</p>
+<ul>
+<li>Nested Menu <a href="https://github.com/emilk/egui/blob/d5673412dd47c0e620831b371201d25f14dfd4f3/egui_demo_lib/src/apps/demo/context_menu.rs#L137" class="uri">https://github.com/emilk/egui/blob/d5673412dd47c0e620831b371201d25f14dfd4f3/egui_demo_lib/src/apps/demo/context_menu.rs#L137</a></li>
+</ul>
+<h2 id="internal">Internal</h2>
+<ul>
+<li>Optimize with caching (memoization) <a href="https://github.com/emilk/egui/blob/master/egui_demo_lib/src/syntax_highlighting.rs#L25" class="uri">https://github.com/emilk/egui/blob/master/egui_demo_lib/src/syntax_highlighting.rs#L25</a></li>
+<li>Continuous and Reactive mode <a href="https://github.com/emilk/egui/blob/master/egui_demo_lib/src/backend_panel.rs#L3" class="uri">https://github.com/emilk/egui/blob/master/egui_demo_lib/src/backend_panel.rs#L3</a> – Recative: event based drawing – Continuous: draw on each frame</li>
+</ul>
+<h3 id="loading-images">Loading images</h3>
+<ul>
+<li><a href="https://github.com/emilk/egui/blob/master/eframe/examples/download_image.rs" class="uri">https://github.com/emilk/egui/blob/master/eframe/examples/download_image.rs</a></li>
+<li><a href="https://github.com/emilk/egui/blob/master/egui_demo_lib/src/apps/http_app.rs" class="uri">https://github.com/emilk/egui/blob/master/egui_demo_lib/src/apps/http_app.rs</a></li>
+</ul>
+<h3 id="drap-and-drop">Drap and drop</h3>
+<ul>
+<li><a href="https://github.com/emilk/egui/blob/master/egui_demo_lib/src/apps/demo/drag_and_drop.rs" class="uri">https://github.com/emilk/egui/blob/master/egui_demo_lib/src/apps/demo/drag_and_drop.rs</a></li>
+</ul>
+<h2 id="style-design">Style / Design</h2>
+<h3 id="put-add-a-widget-to-this-ui-at-a-specific-location-manual-layout.">put : Add a Widget to this Ui at a specific location (manual layout).</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">pub</span> <span class="kw">fn</span> put(<span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">,</span> max_rect<span class="op">:</span> Rect<span class="op">,</span> widget<span class="op">:</span> <span class="kw">impl</span> Widget) <span class="op">-&gt;</span> Response</span></code></pre></div>
+<h3 id="color-some-ui">Color some ui</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>    ui<span class="op">.</span>visuals_mut()<span class="op">.</span>override_text_color <span class="op">=</span> <span class="cn">Some</span>(<span class="pp">egui::Color32::</span>RED)<span class="op">;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>    ui<span class="op">.</span>style_mut()<span class="op">.</span>override_text_style <span class="op">=</span> <span class="cn">Some</span>(<span class="pp">egui::TextStyle::</span>Monospace)<span class="op">;</span></span></code></pre></div>
+<h3 id="set_style-on-all-ui">Set_style on all UI</h3>
+<ul>
+<li><a href="https://docs.rs/egui/latest/egui/struct.Context.html#method.set_style" class="uri">https://docs.rs/egui/latest/egui/struct.Context.html#method.set_style</a></li>
+</ul>
+<h3 id="change-to-lightdark-mode">Change to light/dark mode</h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>ctx<span class="op">.</span>set_visuals(<span class="pp">egui::Visuals::</span>light())<span class="op">;</span></span></code></pre></div>
+<h3 id="label-background_color">Label background_color</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">let</span> label <span class="op">=</span> <span class="pp">Label::</span>new(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>    <span class="pp">RichText::</span>new(<span class="st">&quot;Foo&quot;</span>)<span class="op">.</span>background_color(<span class="pp">Color32::</span>from_rgb(<span class="dv">255</span><span class="op">,</span> <span class="dv">50</span><span class="op">,</span> <span class="dv">50</span>))<span class="op">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>)<span class="op">;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>ui<span class="op">.</span>add(label)<span class="op">;</span></span></code></pre></div>
+<h3 id="add-a-green-button">Add a green Button</h3>
+<div class="sourceCode" id="cb10"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">let</span> button <span class="op">=</span> <span class="pp">Button::</span>new(<span class="st">&quot;test button&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a>    <span class="op">.</span>fill(<span class="pp">egui::Color32::</span>GREEN)<span class="op">;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>ui<span class="op">.</span>add(button)<span class="op">;</span></span></code></pre></div>
+<h3 id="scope-multiples-widget-together-to-apply-the-same-style">Scope multiples widget together to apply the same Style</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>ui<span class="op">.</span>scope(<span class="op">|</span>ui<span class="op">|</span> <span class="op">{}</span>)<span class="op">;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>    ui<span class="op">.</span>spacing_mut()<span class="op">.</span>slider_width <span class="op">=</span> <span class="dv">200.0</span><span class="op">;</span> <span class="co">// Temporary change</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a>    <span class="co">// …</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a><span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
+<h3 id="custom-theme">Custom Theme</h3>
+<ul>
+<li><a href="https://crates.io/crates/egui-theme" class="uri">https://crates.io/crates/egui-theme</a></li>
+</ul>
+<h3 id="custom-button">Custom Button</h3>
+<ul>
+<li><a href="https://git.aweffr.com/aweffr/egui/commit/cc002763eda7616942120948b7bf266529614cd7" class="uri">https://git.aweffr.com/aweffr/egui/commit/cc002763eda7616942120948b7bf266529614cd7</a></li>
+</ul>
+<h3 id="custom-widget-styled-slider-with-dynamic-relative-size">Custom widget styled slider with dynamic relative size</h3>
+<ul>
+<li><a href="https://github.com/AlexxxRu/TinyPomodoro/blob/main/app/src/app/widgets/styled_slider.rs" class="uri">https://github.com/AlexxxRu/TinyPomodoro/blob/main/app/src/app/widgets/styled_slider.rs</a></li>
+</ul>
+<h3 id="egui-style-editor">Egui Style Editor</h3>
+<p>https://docs.rs/egui-stylist/0.1.1/egui_stylist/struct.StylistState.html</p>
+<h3 id="from-hex-to-hex-color-hexadecimal-rgb">from hex to hex color / hexadecimal rgb</h3>
+<p>https://github.com/AlexxxRu/TinyPomodoro/blob/main/app/src/color.rs</p>
+<h3 id="good-designed-code-example-with-slide-bars">good designed code example with slide bars</h3>
+<p>https://github.com/AlexxxRu/TinyPomodoro</p>
+<h3 id="create-a-circle">create a circle</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="kw">let</span> circle <span class="op">=</span> CircleConfig <span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>    background<span class="op">:</span> <span class="cn">Some</span>((<span class="dv">3.0</span><span class="op">,</span> style<span class="op">.</span>fg_stroke<span class="op">.</span>color)<span class="op">.</span>into())<span class="op">,</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a>    foreground<span class="op">:</span> <span class="cn">Some</span>(<span class="dt">Self</span><span class="pp">::</span>status_stroke(<span class="op">&amp;</span>config<span class="op">,</span> <span class="pp">Status::</span>Focus))<span class="op">,</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a>    radius<span class="op">:</span> <span class="dv">120.0</span><span class="op">,</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a>    <span class="op">..</span><span class="bu">Default</span><span class="pp">::</span><span class="kw">default</span>()</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a><span class="op">};</span></span></code></pre></div>
+<h3 id="colored-text-with-a-custom-syntax">Colored text with a custom syntax</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a>https<span class="op">:</span><span class="co">//docs.rs/egui/latest/egui/text/struct.LayoutJob.html#example</span></span></code></pre></div>
+<h3 id="config-font">Config Font</h3>
+<ul>
+<li><a href="https://docs.rs/egui/latest/egui/struct.FontDefinitions.html" class="uri">https://docs.rs/egui/latest/egui/struct.FontDefinitions.html</a></li>
+</ul>
+<div class="sourceCode" id="cb14"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a><span class="kw">let</span> <span class="kw">mut</span> fonts <span class="op">=</span> <span class="pp">FontDefinitions::</span><span class="kw">default</span>()<span class="op">;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true"></a><span class="co">// Large button text:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true"></a>fonts<span class="op">.</span>family_and_size<span class="op">.</span>insert(</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true"></a>    <span class="pp">TextStyle::</span>Button<span class="op">,</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true"></a>    (<span class="pp">FontFamily::</span>Proportional<span class="op">,</span> <span class="dv">32.0</span>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true"></a>)<span class="op">;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true"></a>ctx<span class="op">.</span>set_fonts(fonts)<span class="op">;</span></span></code></pre></div>
+<h2 id="behavior">Behavior</h2>
+<h3 id="add-click-to-label">Add click to label</h3>
+<div class="sourceCode" id="cb15"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="kw">let</span> response <span class="op">=</span> ui<span class="op">.</span>label(<span class="st">&quot;Right-click me!&quot;</span>)<span class="op">;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a><span class="co">// let response = response.sense(egui::Sense::click());</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a><span class="kw">let</span> response <span class="op">=</span> ui<span class="op">.</span>interact(response<span class="op">.</span>rect<span class="op">,</span> response<span class="op">.</span>id<span class="op">,</span> <span class="pp">egui::Sense::</span>click())<span class="op">;</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a><span class="kw">let</span> response <span class="op">=</span> response<span class="op">.</span>context_menu(<span class="op">|</span>ui<span class="op">|</span> <span class="op">{</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true"></a>    <span class="kw">if</span> ui<span class="op">.</span>button(<span class="st">&quot;Close the menu&quot;</span>)<span class="op">.</span>clicked() <span class="op">{</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true"></a>        ui<span class="op">.</span>close_menu()<span class="op">;</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true"></a>    <span class="op">}</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true"></a><span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
+<h3 id="keyboad-input">Keyboad input</h3>
+<div class="sourceCode" id="cb16"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a><span class="kw">if</span> ui<span class="op">.</span>input()<span class="op">.</span>key_pressed(<span class="pp">egui::Key::</span>Enter) <span class="op">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true"></a>  <span class="kw">self</span><span class="op">.</span>search_input <span class="op">=</span> <span class="st">&quot;&quot;</span><span class="op">.</span>into()<span class="op">;</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="focus-a-text-input">Focus a text input</h3>
+<div class="sourceCode" id="cb17"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a>ui<span class="op">.</span>text_edit_singleline(search_input)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a>    <span class="op">.</span>request_focus()<span class="op">;</span></span></code></pre></div>
+<h3 id="create-a-popup-tooltip">Create a popup / tooltip</h3>
+<div class="sourceCode" id="cb18"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true"></a>https<span class="op">:</span><span class="co">//docs.rs/egui/latest/egui/containers/popup/index.html</span></span></code></pre></div>
+<h2 id="draw">Draw</h2>
+<h3 id="draw-a-line-arround-a-widget-or-group-of-widget">draw a line arround a widget or group of widget</h3>
+<div class="sourceCode" id="cb19"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true"></a><span class="kw">let</span> response <span class="op">=</span> ui<span class="op">.</span>label(<span class="st">&quot;test&quot;</span>)<span class="op">;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true"></a>ui<span class="op">.</span>painter()<span class="op">.</span>rect_stroke(response<span class="op">.</span>rect<span class="op">,</span> <span class="dv">0.0</span><span class="op">,</span> (<span class="dv">1.0</span><span class="op">,</span> <span class="pp">egui::Color32::</span>RED))<span class="op">;</span></span></code></pre></div>
+<h3 id="draw-something">draw something</h3>
+<div class="sourceCode" id="cb20"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true"></a><span class="kw">let</span> TAU <span class="op">=</span> <span class="dv">30.0</span><span class="op">;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true"></a><span class="kw">let</span> size <span class="op">=</span> <span class="pp">Vec2::</span>splat(<span class="dv">16.0</span>)<span class="op">;</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true"></a><span class="kw">let</span> (response<span class="op">,</span> painter) <span class="op">=</span> ui<span class="op">.</span>allocate_painter(size<span class="op">,</span> <span class="pp">egui::Sense::</span>hover())<span class="op">;</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true"></a><span class="kw">let</span> rect <span class="op">=</span> response<span class="op">.</span>rect<span class="op">;</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true"></a><span class="kw">let</span> c <span class="op">=</span> rect<span class="op">.</span>center()<span class="op">;</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true"></a><span class="kw">let</span> r <span class="op">=</span> rect<span class="op">.</span>width() <span class="op">/</span> <span class="dv">2.0</span> <span class="op">-</span> <span class="dv">1.0</span><span class="op">;</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true"></a><span class="kw">let</span> color <span class="op">=</span> <span class="pp">Color32::</span>from_gray(<span class="dv">128</span>)<span class="op">;</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true"></a><span class="kw">let</span> stroke <span class="op">=</span> <span class="pp">egui::Stroke::</span>new(<span class="dv">1.0</span><span class="op">,</span> color)<span class="op">;</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true"></a>painter<span class="op">.</span>circle_stroke(c<span class="op">,</span> r<span class="op">,</span> stroke)<span class="op">;</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true"></a>painter<span class="op">.</span>line_segment([c <span class="op">-</span> <span class="pp">egui::</span>vec2(<span class="dv">0.0</span><span class="op">,</span> r)<span class="op">,</span> c <span class="op">+</span> <span class="pp">egui::</span>vec2(<span class="dv">0.0</span><span class="op">,</span> r)]<span class="op">,</span> stroke)<span class="op">;</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true"></a>painter<span class="op">.</span>line_segment([c<span class="op">,</span> c <span class="op">+</span> r <span class="op">*</span> <span class="pp">Vec2::</span>angled(TAU <span class="op">*</span> <span class="dv">1.0</span> <span class="op">/</span> <span class="dv">8.0</span>)]<span class="op">,</span> stroke)<span class="op">;</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true"></a>painter<span class="op">.</span>line_segment([c<span class="op">,</span> c <span class="op">+</span> r <span class="op">*</span> <span class="pp">Vec2::</span>angled(TAU <span class="op">*</span> <span class="dv">3.0</span> <span class="op">/</span> <span class="dv">8.0</span>)]<span class="op">,</span> stroke)<span class="op">;</span></span></code></pre></div>

@@ -1,5 +1,5 @@
 
-use std::{mem, fmt::Error};
+use std::mem;
 #[derive(Debug)]
 pub enum SerialError{
     Undefined
