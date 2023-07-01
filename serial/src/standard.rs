@@ -13,20 +13,20 @@ impl Serial for Box<dyn SerialPort+'static>
             if let Ok(x) =std::io::Read::read(self, &mut buf[y..]){
                 y+=x;
             }
-            println!("readen {buf:?}");
+            //println!("readen {buf:?}");
             if y>=buf.len(){
                 break;
             }
         }
         //self.read_to_end(buf).map_err(|_|SerialError::Undefined)?;
         //self.read(buf).map_err(|_|SerialError::Undefined)?;
-        println!("readen {buf:?}");
+        //println!("readen {buf:?}");
         Ok(())
     }
 
     fn write(&mut self, buf: &[u8])->std::result::Result<(), SerialError> {
         self.write_all(buf).map_err(|_|SerialError::Undefined)?;
-        println!("written {buf:?}");
+        //println!("written {buf:?}");
         Ok(())
     }
 }

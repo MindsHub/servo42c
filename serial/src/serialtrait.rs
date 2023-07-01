@@ -15,8 +15,8 @@ pub trait MySize where Self: Sized{
 }
 pub trait Sendable where Self: MySize //TODO ownership, concat, compile time
 {   
-    fn as_u8(self)->[u8; Self::SIZE];
-    fn from_u8(x: [u8; Self::SIZE])->Self;
+    fn into_byte(self)->[u8; Self::SIZE];
+    fn from_byte(x: [u8; Self::SIZE])->Self;
 }
 
 impl<X: MySize, Y: MySize> MySize for (X, Y) {
@@ -30,22 +30,22 @@ impl<X, Y> Sendable for (X, Y)
         [(); Y::SIZE]:
         {
 
-            fn as_u8(self)->[u8; Self::SIZE] {
+            fn into_byte(self)->[u8; Self::SIZE] {
                 let mut bits = [0; Self::SIZE];
-                let x = self.0.as_u8();
+                let x = self.0.into_byte();
                 bits[..X::SIZE].copy_from_slice(&x);
-                let y = self.1.as_u8();
+                let y = self.1.into_byte();
                 bits[X::SIZE..].copy_from_slice(&y);
                 bits
             }
 
-            fn from_u8(inp: [u8; Self::SIZE]) -> Self {
+            fn from_byte(inp: [u8; Self::SIZE]) -> Self {
                 let mut x = [0u8; X::SIZE];
                 x.copy_from_slice(&inp[..X::SIZE]);
-                let x =X::from_u8(x);
+                let x =X::from_byte(x);
                 let mut y = [0u8; Y::SIZE];
                 y.copy_from_slice(&inp[X::SIZE..]);
-                let y =Y::from_u8(y);
+                let y =Y::from_byte(y);
                 (x, y)
             }
         }
@@ -55,11 +55,11 @@ macro_rules! int_impl {
     ($arg:ty) => {
         impl MySize for $arg{}
         impl Sendable for $arg {
-            fn as_u8(self)->[u8; <$arg>::SIZE] {
-                self.to_le_bytes()
+            fn into_byte(self)->[u8; <$arg>::SIZE] {
+                self.to_be_bytes()
             }
-            fn from_u8(x: [u8; <$arg>::SIZE])->Self {
-                Self::from_le_bytes(x.try_into().unwrap())
+            fn from_byte(x: [u8; <$arg>::SIZE])->Self {
+                Self::from_be_bytes(x.try_into().unwrap())
             }
         }
     };

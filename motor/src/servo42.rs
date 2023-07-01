@@ -1,39 +1,74 @@
 use serial::serialtrait::{Serial, Sendable, SerialError};
 use serial::serialtrait::MySize;
+use serial::test::SerialTest;
 pub struct Servo42C<T: Serial>{
     pub address: u8,
     pub s: T,
+    pub kp: u16,
+    pub ki: u16,
+    pub kd: u16,
+    pub acc: u16,
+}
+impl Default for Servo42C<SerialTest>{
+    fn default() -> Self {
+        let mut ret=Self { address: 0xe0, s: Default::default(), kp: Default::default(), ki: Default::default(), kd: Default::default(), acc: Default::default() };
+        let _ =ret.set_kp(0x650);
+        let _ =ret.set_ki(0x120);
+        let _ =ret.set_kd(0x650);
+        let _ =ret.set_acc(0x11e);//kp: 0x650, ki: 0x120, kd: 0x650, acc: 0x11e 
+        let _ =ret.set_zero();
+        ret
+    }
 }
 
 impl<T: Serial> Servo42C<T>{
-    pub fn send_cmd<Data: Sendable, Res: Sendable>(&mut self, code: u8, data: Data)->Result<Res, SerialError>
-        where 
-        [(); <((u8, u8), Data)>::SIZE]:,
+    pub fn send<Data: Sendable>(&mut self, code: u8, data: Data)->Result<(), SerialError>
+    where
+    
+        [(); <((u8, u8), (Data, u8))>::SIZE]:,
         [(); Data::SIZE]:,
-        [(); Data::SIZE+3]:,
-        [(); Res::SIZE+2]:,
+        [(); <(Data,u8)>::SIZE]:,
+    {   
+        let mut to_send =((self.address, code), (data, 0u8)).into_byte() ;
+        to_send[to_send.len()-1] = to_send[..(to_send.len()-1)].iter().fold(0u8, |x, y| x.overflowing_add(*y).0);
+        self.s.write(&to_send)?;
+        Ok(())
+    }
+
+    pub fn read<Res: Sendable>(&mut self)->Result<Res, SerialError>
+    where
+        [(); Res::SIZE]:,
         [(); <(u8, Res)>::SIZE]:,
         [(); <((u8, Res), u8)>::SIZE]:,
-        {
-        let data_buf =((self.address, code), data).as_u8() ;
-        let chksm: u8 = (data_buf.iter().fold(0u32, |acc, x|acc+*x as u32)%256) as u8;
-        let mut to_send = [0u8; Data::SIZE+3];
-        to_send[..Data::SIZE+2].copy_from_slice(&data_buf[..{Data::SIZE+2}]);
-        to_send[Data::SIZE+2]=chksm;
-        self.s.write(&to_send)?;
+    {   
         let mut readen=[0u8; <((u8, Res), u8)>::SIZE];
         self.s.read(&mut readen)?;
-        let chksm = (readen[..(Res::SIZE+1)].iter().fold(0u32, |acc, x|acc+*x as u32)%256) as u8;
-        if *readen.last().unwrap()!=chksm{
-            println!("invalid checksum {} {chksm}", *readen.last().unwrap());
+        let chcksm = readen[..(readen.len()-1)].iter().fold(0u8, |x, y| x.overflowing_add(*y).0);
+        if *readen.last().unwrap()!=chcksm{
+            println!("invalid checksum {} {chcksm}", *readen.last().unwrap());
             return Err(SerialError::Undefined);
         }
-        let result =<((u8, Res), u8)>::from_u8(readen);
+        let result =<((u8, Res), u8)>::from_byte(readen);
         if result.0.0!=self.address{
-            println!("invalid address");
+            println!("invalid address {} {}", self.address, result.0.0);
             return Err(SerialError::Undefined);
-        } 
+        }
         Ok(result.0.1)
+    }
+
+    pub fn send_cmd<Data: Sendable, Res: Sendable>(&mut self, code: u8, data: Data)->Result<Res, SerialError>
+        where
+            [(); Data::SIZE]:,
+            [(); <(Data,u8)>::SIZE]:,
+            [(); <((u8, u8), (Data, u8))>::SIZE]:,
+            
+            [(); Res::SIZE]:,
+            [(); <(u8, Res)>::SIZE]:,
+            [(); <((u8, Res), u8)>::SIZE]:,
+        {
+        self.send(code, data)?;
+        let r: Res=self.read()?;
+        Ok(r)
     }
 }
 
@@ -343,12 +378,12 @@ impl<T: Serial> Servo42C<T>{
     （Same as the " set 0 " option on screen）
     NOTE: The mode of "0_Mode" needs to be set first. 
      */
-    pub fn set_zero(&mut self)->Result<(), ()>{
-        let ret: u8= self.send_cmd(0x91, 0u8).unwrap();
+    pub fn set_zero(&mut self)->Result<(), SerialError>{
+        let ret: u8= self.send_cmd(0x91, 0u8)?;
         if ret==1{
             Ok(())
         }else{
-            Err(())
+            Err(SerialError::Undefined)
         }
     }
 
@@ -405,15 +440,67 @@ impl<T: Serial> Servo42C<T>{
     /**
      Set the position Kp parameter
      */
-    pub fn set_kp(&mut self, kp: u16)->Result<(), ()>{
-        let ret: u8= self.send_cmd(0xA1, kp).unwrap();
+    pub fn set_kp(&mut self, kp: u16)->Result<(), SerialError>{
+        self.kp=kp;
+        let ret: u8= self.send_cmd(0xA1, kp)?;
+        if ret==1{
+            Ok(())
+        }else{
+            Err(SerialError::Undefined)
+        }
+    }
+    /**
+     Set the position Ki parameter
+     */
+    pub fn set_ki(&mut self, ki: u16)->Result<(), SerialError>{
+        self.ki=ki;
+        let ret: u8= self.send_cmd(0xA2, self.ki)?;
+        if ret==1{
+            Ok(())
+        }else{
+            Err(SerialError::Undefined)
+        }
+    }
+    /**
+     Set the position Ki parameter
+     */
+    pub fn set_kd(&mut self, kd: u16)->Result<(), SerialError>{
+        self.kd=kd;
+        let ret: u8= self.send_cmd(0xA3, kd)?;
+        if ret==1{
+            Ok(())
+        }else{
+            Err(SerialError::Undefined)
+        }
+    }
+
+    /**
+     Set the acceleration (ACC) parameter
+     */
+    pub fn set_acc(&mut self, acc: u16)->Result<(), SerialError>{
+        self.acc=acc;
+        let ret: u8= self.send_cmd(0xA4, self.acc)?;
+        if ret==1{
+            Ok(())
+        }else{
+            Err(SerialError::Undefined)
+        }
+    }
+
+    /**
+     Set the maximum torque (MaxT) parameter
+     */
+    pub fn set_maxt(&mut self, kp: Option<u16>)->Result<(), ()>{
+        let ret: u8= self.send_cmd(0xA5, kp.unwrap_or(0x4B0)).unwrap();
         if ret==1{
             Ok(())
         }else{
             Err(())
         }
     }
+
 }
+
 //Serial control comands
 impl<T: Serial> Servo42C<T>{
     /**
@@ -440,12 +527,19 @@ impl<T: Serial> Servo42C<T>{
      */
     pub fn set_speed(&mut self, dir: bool, mut speed: u8)->Result<u8, ()>{
         if dir{
-            speed=speed|0x80;
+            speed|=0x80;
         }
         let ret: u8= self.send_cmd(0xF6, speed).unwrap();
         Ok(ret)
     }
 
+    /**
+     Stop motor
+     */
+    pub fn stop(&mut self)->Result<u8, ()>{
+        let ret: u8= self.send_cmd(0xF7, ()).unwrap();
+        Ok(ret)
+    }
     /**
      Calibrate the encoder
      （Same as the "Cal" option on screen）
@@ -453,23 +547,26 @@ impl<T: Serial> Servo42C<T>{
      - status =2  Calibrating fail. 
      Note : The motor must be unloaded.
      */
-    pub fn goto(&mut self, speed: u8, dist: u32)->Result<u8, ()>{
+    pub fn goto(&mut self, speed: u8, dist: u32)->u8{
         let ret: u8= self.send_cmd(0xFD, (speed, dist)).unwrap();
-        Ok(ret)
+        //let stopped: u8= self.read().unwrap();
+        //println!("WTF, received {}", stopped);
+        ret
     }
 }
 
 #[cfg(test)]
 mod tests{
-    use serial::test::SerialTest;
+    //use serial::test::SerialTest;
     use super::*;
     macro_rules! test_motor {
-        ($name:ident ($($arg:literal),*) ($($val:literal) *)->($($ret:literal) *)) => {
+        ($name:ident ($($arg:expr),*) ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
             fn $name(){
-                let mut s = SerialTest::default();
-                s.add_response(vec![$($val),*], vec![$($ret),*]);
-                let mut servo=Servo42C{address: 0xe0, s};
+                //let mut s = SerialTest::default();
+                let mut servo=Servo42C::default();
+                servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
+                
                 let _ =servo.$name($($arg),*);
             }
         };
@@ -498,9 +595,13 @@ mod tests{
     test_motor!(set_zero() (0xe0 0x91 0x00 0x71)->(0xe0 0x01 0xe1));
     test_motor!(set_zero_speed(2) (0xe0 0x92 0x02 0x74)->(0xe0 0x01 0xe1));
     test_motor!(set_zero_dir(0) (0xe0 0x93 0x00 0x73)->(0xe0 0x01 0xe1));
-    test_motor!(goto_zero() (0xe0 0x94 0x00 0x74)->(0xe0 0x01 0xe1));
+    
+    test_motor!(set_kp(0x120) (0xe0 0xA1 0x01 0x20 0xA2)->(0xe0 0x01 0xe1));
+    test_motor!(set_ki(0x02) (0xe0 0xA2 0x00 0x02 0x84)->(0xe0 0x01 0xe1));
+    test_motor!(set_kd(0x250) (0xe0 0xA3 0x02 0x50 0xD5)->(0xe0 0x01 0xe1));
+    test_motor!(set_acc(0x80) (0xe0 0xA4 0x00 0x80 0x04)->(0xe0 0x01 0xe1));
+    test_motor!(set_maxt(Some(0x258)) (0xe0 0xA5 0x02 0x58 0xDF)->(0xe0 0x01 0xe1));
     
     test_motor!(set_enable(true) (0xe0 0xf3 0x01 0xd4)->(0xe0 0x01 0xe1));
-    test_motor!(set_kp(8193) (0xe0 0xA1 0x01 0x20 0xA2)->(0xe0 0x01 0xe1));
-
+    test_motor!(goto_zero() (0xe0 0x94 0x00 0x74)->(0xe0 0x01 0xe1));
 }
