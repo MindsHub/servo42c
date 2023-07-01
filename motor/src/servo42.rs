@@ -94,8 +94,8 @@ impl<T: Serial> Servo42C<T> {
     - carry is the value of the encoder (giri?)
     - current value of the encoder (fase)
      */
-    pub fn read_encoder_value(&mut self) -> (i32, u16) {
-        self.send_cmd(0x30, ()).unwrap()
+    pub fn read_encoder_value(&mut self) -> Result<(i32, u16), SerialError> {
+        self.send_cmd(0x30, ())
     }
 
     /**
@@ -227,12 +227,12 @@ impl<T: Serial> Servo42C<T> {
     status =1  Set success.
     status =0  Set fail.
     */
-    pub fn set_microstep(&mut self, t: u8) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x84, t).unwrap();
+    pub fn set_microstep(&mut self, t: u8) -> Result<(), SerialError> {
+        let ret: u8 = self.send_cmd(0x84, t)?;
         if ret == 1 {
             Ok(())
         } else {
-            Err(())
+            Err(SerialError::Undefined)
         }
     }
 
@@ -537,11 +537,11 @@ impl<T: Serial> Servo42C<T> {
     Vrpm = (Speed × 30000)/(Mstep × 200)(RPM)   (1.8 degree motor)
     Vrpm = (Speed × 30000)/(Mstep × 400)(RPM)   (0.9 degree motor)
      */
-    pub fn set_speed(&mut self, dir: bool, mut speed: u8) -> Result<u8, ()> {
+    pub fn set_speed(&mut self, dir: bool, mut speed: u8) -> Result<u8, SerialError> {
         if dir {
             speed |= 0x80;
         }
-        let ret: u8 = self.send_cmd(0xF6, speed).unwrap();
+        let ret: u8 = self.send_cmd(0xF6, speed)?;
         Ok(ret)
     }
 

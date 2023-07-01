@@ -1,11 +1,11 @@
-use std::time::Duration;
+use std::{time::{Duration, SystemTime}, ops::Shl};
 
 use eframe::egui::{self};
 use motor::servo42::Servo42C;
 use serial::standard::{serialport, serialport::*};
 fn main() {
-    let native_options = eframe::NativeOptions::default();
-    //native_options.vsync=true;
+    let mut native_options = eframe::NativeOptions::default();
+    native_options.vsync=false;
     let _ = eframe::run_native(
         "My egui App",
         native_options,
@@ -17,6 +17,12 @@ struct MyEguiApp {
     m: Option<Servo42C<Box<dyn SerialPort>>>,
     name: String,
     is_connect: bool,
+    encoder: Vec<(f32, i64)>,
+    correct: usize,
+    invalid: usize,
+    t: SystemTime,
+    start: SystemTime,
+    dir: bool,
 }
 
 impl MyEguiApp {
@@ -51,6 +57,12 @@ impl MyEguiApp {
             m: Default::default(),
             name: "/dev/ttyACM0".to_string(),
             is_connect: false,
+            encoder: vec![],
+            correct: 5,
+            invalid: 0,
+            t: SystemTime::now(),
+            start: SystemTime::now(),
+            dir: true,
         }
     }
 }
@@ -78,7 +90,29 @@ impl MyEguiApp {
     cmd!(set_acc, acc);
 }
 
+impl MyEguiApp{
+    fn plot(&self, ui: &mut egui::Ui) -> egui::Response {
+        use egui::plot::{Line, PlotPoints};
+        let mut cont=1u32;
+        let line_points: PlotPoints = self.encoder.iter()
+            .map(|(x, y)| {
+                cont=cont+1;
+                let y= (*y as f64)/65536.0;
+                [*x as f64, y]
+            })
+            .collect();
+        let line = Line::new(line_points);
+        egui::plot::Plot::new("example_plot")
+            .height(200.0)
+            //.data_aspect(cont as f32)
+            .show(ui, |plot_ui| plot_ui.line(line))
+            .response
+    }
+}
+
 impl eframe::App for MyEguiApp {
+    
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical(|ui| {
@@ -90,23 +124,28 @@ impl eframe::App for MyEguiApp {
                     {
                         if self.is_connect {
                             println!("connecting");
-                            if let Ok(val) = serialport::new("/dev/ttyACM0", 115_200)
-                                .timeout(Duration::from_millis(1000))
+                            if let Ok(val) = serialport::new(&self.name, 38_400)
+                                .timeout(Duration::from_millis(10))
                                 .parity(Parity::None)
-                                .baud_rate(115200)
-                                .stop_bits(serial::standard::StopBits::Two)
+                                //.baud_rate(115200)
+                                .stop_bits(serial::standard::StopBits::One)
+                                .data_bits(DataBits::Eight)
                                 .flow_control(serial::standard::FlowControl::None)
                                 .open()
                             {
-                                let m = Servo42C::<Box<dyn SerialPort>> {
+                                let m: Servo42C<Box<dyn SerialPort>> = Servo42C::<Box<dyn SerialPort>> {
                                     address: 0xe0,
                                     s: val,
-                                    kp: 0x650,
+                                    kp: 0x200,
                                     ki: 0x120,
                                     kd: 0x650,
-                                    acc: 0x11e,
+                                    acc: 500,
                                 };
                                 self.m = Some(m);
+                                self.start=SystemTime::now();
+                                self.encoder=vec![];
+                                self.correct=5;
+                                self.invalid=0;
                             } else {
                                 self.is_connect = false;
                             }
@@ -120,6 +159,33 @@ impl eframe::App for MyEguiApp {
                 self.set_ki(ui);
                 self.set_kd(ui);
                 self.set_acc(ui);
+                self.plot(ui);
+                if self.t.elapsed().unwrap()>Duration::from_secs(3){
+                    self.t=SystemTime::now();
+                    self.dir=!self.dir;
+                    if let Some(motor) = &mut self.m{
+                        let _ = motor.set_microstep(16);
+                        let _ =motor.set_speed(self.dir, 50);
+                    }
+                }
+                ui.heading(format!("correct={} invalid={} rap={} cps={}", self.correct, self.invalid, self.correct as f32/(self.invalid + self.correct)as f32, (self.invalid + self.correct)as f32/self.start.elapsed().unwrap().as_secs_f32()));
+                let data = if let Some(motor) = &mut self.m{
+                    if let Ok(val) = motor.read_encoder_value(){
+                        self.correct+=1;
+                        println!("{val:?}");
+                        Some((self.start.elapsed().unwrap().as_secs_f32(),(val.0 as i64).shl(16)+val.1 as i64))
+                    }else{
+                        self.invalid+=1;
+                        None
+                    }
+                    
+                }else{
+                    None
+                };
+                if let Some(x)=data{
+                    println!("{x:?}");
+                    self.encoder.push(x);
+                }
             });
         });
 
