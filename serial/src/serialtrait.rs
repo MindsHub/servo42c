@@ -2,6 +2,8 @@ use std::mem;
 #[derive(Debug)]
 pub enum SerialError {
     Undefined,
+    ConnectionBreak,
+    Interrupted,
 }
 pub trait Serial {
     fn read(&mut self, buf: &mut [u8]) -> Result<(), SerialError>;

@@ -9,4 +9,4 @@ edition = "2021"
 serial ={path="../serial"}
 
 [features]
-no_std=[]
+std=[]

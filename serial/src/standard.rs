@@ -6,30 +6,27 @@ pub use serialport::*;
 
 impl Serial for Box<dyn SerialPort + 'static> {
     fn read(&mut self, buf: &mut [u8]) -> std::result::Result<(), SerialError> {
-        let mut y = 0usize;
-        let mut failed=0usize;
+        let mut readen = 0usize;
+        let mut failed = 0usize;
         loop {
-            if let Ok(x) = std::io::Read::read(self, &mut buf[y..]) {
-                y += x;
-            }else{
-                failed+=1;
+            if let Ok(x) = std::io::Read::read(self, &mut buf[readen..]) {
+                readen += x;
+            } else {
+                failed += 1;
             }
-            println!("readen {buf:?} {y}/{}", buf.len());
-            if failed>10 {
+            println!("readen {buf:?} {readen}/{}", buf.len());
+            if failed > 10 {
                 return Err(SerialError::Undefined);
             }
-            if y >= buf.len() {
+            if readen >= buf.len() {
                 break;
             }
         }
-        //self.read_to_end(buf).map_err(|_|SerialError::Undefined)?;
-        //self.read(buf).map_err(|_|SerialError::Undefined)?;
-        //println!("readen {buf:?}");
         Ok(())
     }
 
     fn write(&mut self, buf: &[u8]) -> std::result::Result<(), SerialError> {
-        self.write_all(buf).map_err(|_| SerialError::Undefined)?;
+        self.write_all(buf).map_err(|_| SerialError::Interrupted)?;
         println!("written {buf:?}");
         Ok(())
     }

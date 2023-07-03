@@ -1,32 +1,9 @@
+
+use std::ops::Shl;
+
 use serial::serialtrait::MySize;
 use serial::serialtrait::{Sendable, Serial, SerialError};
-use serial::test::SerialTest;
-pub struct Servo42C<T: Serial> {
-    pub address: u8,
-    pub s: T,
-    pub kp: u16,
-    pub ki: u16,
-    pub kd: u16,
-    pub acc: u16,
-}
-impl Default for Servo42C<SerialTest> {
-    fn default() -> Self {
-        let mut ret = Self {
-            address: 0xe0,
-            s: Default::default(),
-            kp: Default::default(),
-            ki: Default::default(),
-            kd: Default::default(),
-            acc: Default::default(),
-        };
-        let _ = ret.set_kp(0x650);
-        let _ = ret.set_ki(0x120);
-        let _ = ret.set_kd(0x650);
-        let _ = ret.set_acc(0x11e); //kp: 0x650, ki: 0x120, kd: 0x650, acc: 0x11e
-        let _ = ret.set_zero();
-        ret
-    }
-}
+use super::Servo42C;
 
 impl<T: Serial> Servo42C<T> {
     pub fn send<Data: Sendable>(&mut self, code: u8, data: Data) -> Result<(), SerialError>
@@ -86,6 +63,40 @@ impl<T: Serial> Servo42C<T> {
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
+pub enum Protection{
+    Protected,
+    UnProtected,
+}
+pub enum MotType{
+    Deg1_8,
+    Deg0_9,
+}
+
+pub enum WorkMode{
+    CrOpen,
+    CrVFoc,
+    CrUART,
+}
+
+pub enum ActiveOn{
+    Low,
+    High,
+    Hold,
+}
+pub enum Dir{
+    ClockWise,
+    CounterClockWise,
+}
+pub enum BaudRate{
+    B9600,
+    B19200,
+    B25000,
+    B38400,
+    B57600,
+    B115200
+}
+
 //read impl block
 impl<T: Serial> Servo42C<T> {
     /**
@@ -94,15 +105,17 @@ impl<T: Serial> Servo42C<T> {
     - carry is the value of the encoder (giri?)
     - current value of the encoder (fase)
      */
-    pub fn read_encoder_value(&mut self) -> Result<(i32, u16), SerialError> {
-        self.send_cmd(0x30, ())
+    pub fn read_encoder_value(&mut self) -> Result<i64, SerialError> {
+        let (rotations, phase): (i32, u16) = self.send_cmd(0x30, ())?;
+        let tot = (rotations as i64).shl(16) + phase as i64;
+        Ok(tot)
     }
 
     /**
      Read the number of pulses received.
     */
-    pub fn read_recived_pulses(&mut self) -> i32 {
-        self.send_cmd(0x33, ()).unwrap()
+    pub fn read_recived_pulses(&mut self) -> Result<i32, SerialError> {
+        self.send_cmd(0x33, ())
     }
 
     /**recived_pulses
@@ -113,20 +126,20 @@ impl<T: Serial> Servo42C<T> {
     for  example,  when  the  angle  error  is  1°,  the  return  error  is
     65536/360= 182.444, and so on.
     */
-    pub fn read_error(&mut self) -> i16 {
-        self.send_cmd(0x39, ()).unwrap()
+    pub fn read_error(&mut self) -> Result<i16, SerialError> {
+        self.send_cmd(0x39, ())
     }
 
     /**
     read the En pins status
     */
-    pub fn read_en_pin(&mut self) -> bool {
-        let ret: u8 = self.send_cmd(0x3A, ()).unwrap();
+    pub fn read_en_pin(&mut self) -> Result<bool, SerialError> {
+        let ret: u8 = self.send_cmd(0x3A, ())?;
         /*
         enable =1  Enabled
         enable =2 Disabled
          */
-        ret == 1
+        Ok(ret == 1)
     }
 
     /**
@@ -134,21 +147,29 @@ impl<T: Serial> Servo42C<T> {
     status =1 release success.
     status =0 release fail
      */
-    pub fn release_lock(&mut self) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x3D, ()).unwrap();
+    pub fn release_lock(&mut self) -> Result<(), SerialError> {
+        let ret: u8 = self.send_cmd(0x3D, ())?;
         if ret == 1 {
             Ok(())
         } else {
-            Err(())
+            Err(SerialError::Undefined)
         }
     }
+
     /**
     Read the motor shaft protection state.
     status =1  protected.
     status =2  no protected
      */
-    pub fn read_lock(&mut self) -> u8 {
-        self.send_cmd(0x3E, ()).unwrap()
+    pub fn read_lock(&mut self) -> Result<Protection, SerialError> {
+        let t: u8 = self.send_cmd(0x3E, ())?;
+        Ok(
+            if t==1{
+                Protection::Protected  
+            }else{
+                Protection::UnProtected
+            }
+        )
     }
 }
 
@@ -178,12 +199,16 @@ impl<T: Serial> Servo42C<T> {
     status =1  Set success.
     status =0  Set fail.
     */
-    pub fn set_mot_type(&mut self, t: u8) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x81, t).unwrap();
+    pub fn set_mot_type(&mut self, mot_type: MotType) -> Result<(), SerialError> {
+        let to_send: u8=match mot_type{
+            MotType::Deg0_9 => 0,
+            MotType::Deg1_8 => 1,
+        };  
+        let ret: u8 = self.send_cmd(0x81, to_send)?;
         if ret == 1 {
             Ok(())
         } else {
-            Err(())
+            Err(SerialError::Undefined)
         }
     }
 
@@ -196,8 +221,13 @@ impl<T: Serial> Servo42C<T> {
     status =1  Set success.
     status =0  Set fail
     */
-    pub fn set_mode(&mut self, t: u8) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x82, t).unwrap();
+    pub fn set_mode(&mut self, work_mode: WorkMode) -> Result<(), ()> {
+        let to_send: u8= match work_mode{
+            WorkMode::CrOpen => 0,
+            WorkMode::CrVFoc => 1,
+            WorkMode::CrUART => 2,
+        };
+        let ret: u8 = self.send_cmd(0x82, to_send).unwrap();
         if ret == 1 {
             Ok(())
         } else {
@@ -243,8 +273,13 @@ impl<T: Serial> Servo42C<T> {
     - enable = 01   active high   (H)
     - enable = 02   active always (Hold)
     */
-    pub fn set_en_active(&mut self, t: u8) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x85, t).unwrap();
+    pub fn set_en_active(&mut self, active_on: ActiveOn) -> Result<(), ()> {
+        let to_send: u8=match active_on{
+            ActiveOn::Low => 0,
+            ActiveOn::High => 1,
+            ActiveOn::Hold => 2
+        };
+        let ret: u8 = self.send_cmd(0x85, to_send).unwrap();
         if ret == 1 {
             Ok(())
         } else {
@@ -258,8 +293,12 @@ impl<T: Serial> Servo42C<T> {
     - dir = 00   CW
     - dir = 01   CCW
     */
-    pub fn set_direction(&mut self, t: u8) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x86, t).unwrap();
+    pub fn set_direction(&mut self, dir: Dir) -> Result<(), ()> {
+        let to_send: u8 = match dir{
+            Dir::ClockWise => 0,
+            Dir::CounterClockWise => 1,
+        };
+        let ret: u8 = self.send_cmd(0x86, to_send).unwrap();
         if ret == 1 {
             Ok(())
         } else {
@@ -288,12 +327,12 @@ impl<T: Serial> Servo42C<T> {
     Set the motor shaft locked-rotor protection function
     Same as the "Protect" option on screen
     */
-    pub fn set_lock(&mut self, active: bool) -> Result<(), ()> {
-        let mut t: u8 = 0;
-        if active {
-            t += 1;
-        }
-        let ret: u8 = self.send_cmd(0x88, t).unwrap();
+    pub fn set_lock(&mut self, protection: Protection) -> Result<(), ()> {
+        let to_send: u8 = match protection{
+            Protection::Protected => 0,
+            Protection::UnProtected => 1,
+        };
+        let ret: u8 = self.send_cmd(0x88, to_send).unwrap();
         if ret == 1 {
             Ok(())
         } else {
@@ -329,8 +368,16 @@ impl<T: Serial> Servo42C<T> {
      - baud = 05   57600.
      - baud = 06   115200
      */
-    pub fn set_baudrate(&mut self, t: u8) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x8A, t).unwrap();
+    pub fn set_baudrate(&mut self, baud_rate: BaudRate) -> Result<(), ()> {
+        let to_send: u8 = match baud_rate{
+            BaudRate::B9600 => 0,
+            BaudRate::B19200 => 1,
+            BaudRate::B25000 => 2,
+            BaudRate::B38400 => 3,
+            BaudRate::B57600 => 4,
+            BaudRate::B115200 => 5,
+        };
+        let ret: u8 = self.send_cmd(0x8A, to_send).unwrap();
         if ret == 1 {
             Ok(())
         } else {
@@ -344,8 +391,8 @@ impl<T: Serial> Servo42C<T> {
      Slave address = addr + 0xe0
      addr from 0-9
      */
-    pub fn set_slave_address(&mut self, t: u8) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x8B, t).unwrap();
+    pub fn set_slave_address(&mut self, addr: u8) -> Result<(), ()> { //TODO enum?
+        let ret: u8 = self.send_cmd(0x8B, addr).unwrap();
         if ret == 1 {
             Ok(())
         } else {
@@ -518,13 +565,17 @@ impl<T: Serial> Servo42C<T> {
     /**
     Set the En pin status in CR_UART mode.
     */
-    pub fn set_enable(&mut self, en: bool) -> Result<u8, ()> {
+    pub fn set_enable(&mut self, en: bool) -> Result<(), ()> {
         let mut b = 0u8;
         if en {
             b += 1;
         }
         let ret: u8 = self.send_cmd(0xF3, b).unwrap();
-        Ok(ret)
+        if ret == 1 {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 
     /**
@@ -568,52 +619,64 @@ impl<T: Serial> Servo42C<T> {
 }
 
 #[cfg(test)]
+#[cfg(feature = "std")]
 mod tests {
-    //use serial::test::SerialTest;
     use super::*;
+    use serial::test::SerialTest;
     macro_rules! test_motor {
-        ($name:ident ($($arg:expr),*) ($($val:literal) *)->($($ret:literal) *)) => {
+        /*($name:ident ($($arg:expr),*) ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
             fn $name(){
-                //let mut s = SerialTest::default();
-                let mut servo=Servo42C::default();
+                let mut servo=Servo42C::new(SerialTest::default()).unwrap();
                 servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
 
                 let _ =servo.$name($($arg),*);
             }
+        };*/
+
+        ($name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
+            #[test]
+            fn $name(){
+                let mut servo=Servo42C::new(SerialTest::default()).unwrap();
+                servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
+
+                assert_eq!(servo.$name($($arg),*).unwrap(), $res);
+            }
         };
     }
 
-    test_motor!(read_encoder_value() (0xe0 0x30 0x10)->(0xe0 00 00 00 00 0x40 00 0x20));
-    test_motor!(read_recived_pulses() (0xe0 0x33 0x13)->(0xe0 00 00 0x01 00 0xe1));
-    test_motor!(read_error() (0xe0 0x39 0x19)->(0xe0 00 0xB7 0x97));
-    test_motor!(read_en_pin() (0xe0 0x3a 0x1a)->(0xe0 0x01 0xe1));
-    test_motor!(release_lock() (0xe0 0x3d 0x1d)->(0xe0 0x01 0xe1));
-    test_motor!(read_lock() (0xe0 0x3e 0x1e)->(0xe0 0x02 0xe2));
-    test_motor!(calibrate() (0xe0 0x80 0x00 0x60)->(0xe0 0x01 0xe1));
-    test_motor!(set_mot_type(1) (0xe0 0x81 0x01 0x62)->(0xe0 0x01 0xe1));
-    test_motor!(set_mode(1) (0xe0 0x82 0x01 0x63)->(0xe0 0x01 0xe1));
-    test_motor!(set_current(6) (0xe0 0x83 0x06 0x69)->(0xe0 0x01 0xe1));
-    test_motor!(set_microstep(26) (0xe0 0x84 0x1a 0x7e)->(0xe0 0x01 0xe1));
-    test_motor!(set_en_active(0) (0xe0 0x85 0x00 0x65)->(0xe0 0x01 0xe1));
-    test_motor!(set_direction(0) (0xe0 0x86 0x00 0x66)->(0xe0 0x01 0xe1));
-    test_motor!(set_autossd(false) (0xe0 0x87 0x00 0x67)->(0xe0 0x01 0xe1));
-    test_motor!(set_lock(false) (0xe0 0x88 0x00 0x68)->(0xe0 0x01 0xe1));
-    test_motor!(set_subdivision_interpolation(false) (0xe0 0x89 0x00 0x69)->(0xe0 0x01 0xe1));
-    test_motor!(set_baudrate(4) (0xe0 0x8A 0x04 0x6e)->(0xe0 0x01 0xe1));
-    test_motor!(set_slave_address(2) (0xe0 0x8B 0x02 0x6d)->(0xe0 0x01 0xe1));
-    test_motor!(reset() (0xe0 0x3f 0x1f)->(0xe0 0x01 0xe1));
-    test_motor!(set_zero_mode(1) (0xe0 0x90 0x01 0x71)->(0xe0 0x01 0xe1));
-    test_motor!(set_zero() (0xe0 0x91 0x00 0x71)->(0xe0 0x01 0xe1));
-    test_motor!(set_zero_speed(2) (0xe0 0x92 0x02 0x74)->(0xe0 0x01 0xe1));
-    test_motor!(set_zero_dir(0) (0xe0 0x93 0x00 0x73)->(0xe0 0x01 0xe1));
+    test_motor!(read_encoder_value()->16384, (0xe0 0x30 0x10)->(0xe0 00 00 00 00 0x40 00 0x20));
+    test_motor!(read_recived_pulses()->256, (0xe0 0x33 0x13)->(0xe0 00 00 0x01 00 0xe1));
+    test_motor!(read_error()->183, (0xe0 0x39 0x19)->(0xe0 00 0xB7 0x97));
+    test_motor!(read_en_pin()->true, (0xe0 0x3a 0x1a)->(0xe0 0x01 0xe1));
+    test_motor!(release_lock()->(), (0xe0 0x3d 0x1d)->(0xe0 0x01 0xe1));
 
-    test_motor!(set_kp(0x120) (0xe0 0xA1 0x01 0x20 0xA2)->(0xe0 0x01 0xe1));
-    test_motor!(set_ki(0x02) (0xe0 0xA2 0x00 0x02 0x84)->(0xe0 0x01 0xe1));
-    test_motor!(set_kd(0x250) (0xe0 0xA3 0x02 0x50 0xD5)->(0xe0 0x01 0xe1));
-    test_motor!(set_acc(0x80) (0xe0 0xA4 0x00 0x80 0x04)->(0xe0 0x01 0xe1));
-    test_motor!(set_maxt(Some(0x258)) (0xe0 0xA5 0x02 0x58 0xDF)->(0xe0 0x01 0xe1));
+    test_motor!(read_lock()->Protection::UnProtected, (0xe0 0x3e 0x1e)->(0xe0 0x02 0xe2));
+    test_motor!(calibrate()->(), (0xe0 0x80 0x00 0x60)->(0xe0 0x01 0xe1));
+    test_motor!(set_mot_type(MotType::Deg1_8)->(), (0xe0 0x81 0x01 0x62)->(0xe0 0x01 0xe1));
+    test_motor!(set_mode(WorkMode::CrVFoc)->(), (0xe0 0x82 0x01 0x63)->(0xe0 0x01 0xe1));
+    test_motor!(set_current(6)->(), (0xe0 0x83 0x06 0x69)->(0xe0 0x01 0xe1));
+    test_motor!(set_microstep(26)->(), (0xe0 0x84 0x1a 0x7e)->(0xe0 0x01 0xe1));
+    test_motor!(set_en_active(ActiveOn::Low)->(), (0xe0 0x85 0x00 0x65)->(0xe0 0x01 0xe1));
+    test_motor!(set_direction(Dir::ClockWise)->(), (0xe0 0x86 0x00 0x66)->(0xe0 0x01 0xe1));
+    test_motor!(set_autossd(false)->(), (0xe0 0x87 0x00 0x67)->(0xe0 0x01 0xe1));
+    test_motor!(set_lock(Protection::Protected)->(), (0xe0 0x88 0x00 0x68)->(0xe0 0x01 0xe1));
+    test_motor!(set_subdivision_interpolation(false)->(), (0xe0 0x89 0x00 0x69)->(0xe0 0x01 0xe1));
+    test_motor!(set_baudrate(BaudRate::B57600)->(), (0xe0 0x8A 0x04 0x6e)->(0xe0 0x01 0xe1));
+    test_motor!(set_slave_address(2)->(), (0xe0 0x8B 0x02 0x6d)->(0xe0 0x01 0xe1));
+    test_motor!(reset()->(), (0xe0 0x3f 0x1f)->(0xe0 0x01 0xe1));
 
-    test_motor!(set_enable(true) (0xe0 0xf3 0x01 0xd4)->(0xe0 0x01 0xe1));
-    test_motor!(goto_zero() (0xe0 0x94 0x00 0x74)->(0xe0 0x01 0xe1));
+    test_motor!(set_zero_mode(1)->(), (0xe0 0x90 0x01 0x71)->(0xe0 0x01 0xe1));
+    test_motor!(set_zero()->(), (0xe0 0x91 0x00 0x71)->(0xe0 0x01 0xe1));
+    test_motor!(set_zero_speed(2)->(), (0xe0 0x92 0x02 0x74)->(0xe0 0x01 0xe1));
+    test_motor!(set_zero_dir(0)->(), (0xe0 0x93 0x00 0x73)->(0xe0 0x01 0xe1));
+
+    test_motor!(set_kp(0x120)->(), (0xe0 0xA1 0x01 0x20 0xA2)->(0xe0 0x01 0xe1));
+    test_motor!(set_ki(0x02)->(), (0xe0 0xA2 0x00 0x02 0x84)->(0xe0 0x01 0xe1));
+    test_motor!(set_kd(0x250)->(), (0xe0 0xA3 0x02 0x50 0xD5)->(0xe0 0x01 0xe1));
+    test_motor!(set_acc(0x80)->(), (0xe0 0xA4 0x00 0x80 0x04)->(0xe0 0x01 0xe1));
+    test_motor!(set_maxt(Some(0x258))->(), (0xe0 0xA5 0x02 0x58 0xDF)->(0xe0 0x01 0xe1));
+
+    test_motor!(set_enable(true)->(), (0xe0 0xf3 0x01 0xd4)->(0xe0 0x01 0xe1));
+    test_motor!(goto_zero()->(), (0xe0 0x94 0x00 0x74)->(0xe0 0x01 0xe1));
 }
