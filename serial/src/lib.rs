@@ -1,12 +1,17 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
+#![cfg_attr(not(feature = "std"), no_std)]
+//#![no_std]
 
 use serialtrait::{MySize, Sendable};
 
 pub mod serialtrait;
-pub mod test;
 
+
+#[cfg(feature ="std")]
 pub mod standard;
+#[cfg(feature ="std")]
+pub mod test;
 
 int_impl!(i32);
 int_impl!(i16);

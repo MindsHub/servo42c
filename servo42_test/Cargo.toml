@@ -7,4 +7,12 @@ publish=false
 [dependencies]
 eframe="0.22.0"
 motor={path="../motor"}
-serial={path="../serial"}
+serial={path="../serial", features=["std"], optional=true}
+
+[[bin]]
+name="servo42_test"
+path="src/main.rs"
+required-features = ["std"]
+
+[features]
+std=["dep:serial"]

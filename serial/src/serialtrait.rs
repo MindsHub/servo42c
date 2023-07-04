@@ -1,4 +1,4 @@
-use std::mem;
+use core::mem;
 #[derive(Debug)]
 pub enum SerialError {
     Undefined,

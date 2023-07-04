@@ -1,27 +1,21 @@
 [workspace]
-members=["motor", "serial", "servo42_test",]#"servo42_arduino_test"
+members=["motor", "serial","servo42_test", "arduino_test"]#"servo42_arduino_test" 
 resolver = "2"
 
 [workspace.dependencies]
 serialport = "4.2.1"
 
-#workspace.edition = "2021"
-#workspace.resolver = "1"
-
 # Configure the build for minimal size - AVRs have very little program memory
-#[profile.dev-avr]
-#inherits = "dev"
-#panic = "abort"
-#lto = true
-#opt-level = "s"
-#target = "avr-specs/avr-atmega328p.json"
+[profile.avr_dev]
+inherits = "dev"
+panic = "abort"
+lto = true
+opt-level = "s"
 
-#[profile.release-avr]
-#inherits = "release"
-#panic = "abort"
-#codegen-units = 1
-#debug = true
-#lto = true
-#opt-level = "s"
-#target = "avr-specs/avr-atmega328p.json"
-
+[profile.avr_release]
+inherits = "release"
+panic = "abort"
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "s"

@@ -1,5 +1,5 @@
 
-use std::ops::Shl;
+use core::ops::Shl;
 
 use serial::serialtrait::MySize;
 use serial::serialtrait::{Sendable, Serial, SerialError};
@@ -32,12 +32,10 @@ impl<T: Serial> Servo42C<T> {
             .iter()
             .fold(0u8, |x, y| x.overflowing_add(*y).0);
         if *readen.last().unwrap() != chcksm {
-            println!("invalid checksum {} {chcksm}", *readen.last().unwrap());
             return Err(SerialError::Undefined);
         }
         let result = <((u8, Res), u8)>::from_byte(readen);
         if result.0 .0 != self.address {
-            println!("invalid address {} {}", self.address, result.0 .0);
             return Err(SerialError::Undefined);
         }
         Ok(result.0 .1)
