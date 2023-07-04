@@ -41,6 +41,7 @@ impl Serial for SerialTest {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use crate::serialtrait::Serial;

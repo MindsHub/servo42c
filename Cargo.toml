@@ -1,21 +1,5 @@
 [workspace]
-members=["motor", "serial","servo42_test", "arduino_test"]#"servo42_arduino_test" 
+members=["motor", "serial","servo42_test", ]#"arduino_test"
 resolver = "2"
-
 [workspace.dependencies]
 serialport = "4.2.1"
-
-# Configure the build for minimal size - AVRs have very little program memory
-[profile.avr_dev]
-inherits = "dev"
-panic = "abort"
-lto = true
-opt-level = "s"
-
-[profile.avr_release]
-inherits = "release"
-panic = "abort"
-codegen-units = 1
-debug = true
-lto = true
-opt-level = "s"

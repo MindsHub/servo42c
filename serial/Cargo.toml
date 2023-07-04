@@ -10,3 +10,4 @@ serialport = { workspace = true, optional = true}
 
 [features]
 std = ["dep:serialport"]
+default=["std"]

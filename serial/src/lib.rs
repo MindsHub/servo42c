@@ -11,6 +11,7 @@ pub mod serialtrait;
 #[cfg(feature ="std")]
 pub mod standard;
 #[cfg(feature ="std")]
+//#[cfg(test)]
 pub mod test;
 
 int_impl!(i32);

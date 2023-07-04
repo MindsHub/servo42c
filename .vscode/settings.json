@@ -1,5 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
+        "./serial/Cargo.toml",
+        "./serial/Cargo.toml",
         "./serial/Cargo.toml"
     ]
 }

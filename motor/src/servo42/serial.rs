@@ -620,6 +620,7 @@ impl<T: Serial> Servo42C<T> {
 #[cfg(feature = "std")]
 mod tests {
     use super::*;
+
     use serial::test::SerialTest;
     macro_rules! test_motor {
         /*($name:ident ($($arg:expr),*) ($($val:literal) *)->($($ret:literal) *)) => {
