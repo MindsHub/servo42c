@@ -1,8 +1,18 @@
+[unstable]
+build-std = ["core"]
+
 [build]
 target = "avr-specs/avr-atmega328p.json"
 
 [target.'cfg(target_arch = "avr")']
 runner = "ravedude uno -cb 57600"
 
-[unstable]
-build-std = ["core"]
+
+[profile.dev]
+#inherits = "dev"
+panic = "abort"
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "s"
+

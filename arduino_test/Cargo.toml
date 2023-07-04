@@ -9,7 +9,6 @@ license = "MIT OR Apache-2.0"
 name = "arduino_test"
 test = false
 bench = false
-required-features = ["no_std"]
 
 [dependencies]
 panic-halt = "0.2.0"
@@ -23,5 +22,4 @@ git = "https://github.com/rahix/avr-hal"
 rev = "7dfa6d322b9df98b2d98afe0e14a97afe0187ac1"
 features = ["arduino-uno"]
 
-[features]
-no_std=[]
+[workspace]
