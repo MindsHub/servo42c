@@ -3,9 +3,11 @@ use core::ops::Shl;
 
 use serial::serialtrait::MySize;
 use serial::serialtrait::{Sendable, Serial, SerialError};
+use crate::motortrait::MovementController;
+
 use super::Servo42C;
 
-impl<T: Serial> Servo42C<T> {
+impl<T: Serial, V: MovementController> Servo42C<T, V> {
     pub fn send<Data: Sendable>(&mut self, code: u8, data: Data) -> Result<(), SerialError>
     where
         [(); <((u8, u8), (Data, u8))>::SIZE]:,
@@ -96,7 +98,7 @@ pub enum BaudRate{
 }
 
 //read impl block
-impl<T: Serial> Servo42C<T> {
+impl<T: Serial, V: MovementController> Servo42C<T, V> {
     /**
     read the encoder value (the motor should be calibrated)
     returns (carry, value)  where
@@ -172,7 +174,7 @@ impl<T: Serial> Servo42C<T> {
 }
 
 ///set impl block
-impl<T: Serial> Servo42C<T> {
+impl<T: Serial, V: MovementController> Servo42C<T, V> {
     /**
     Calibrate the encoder
     （Same as the "Cal" option on screen）
@@ -180,12 +182,12 @@ impl<T: Serial> Servo42C<T> {
     - status =2  Calibrating fail.
     Note : The motor must be unloaded.
     */
-    pub fn calibrate(&mut self) -> Result<(), ()> {
-        let ret: u8 = self.send_cmd(0x80, 0x00u8).unwrap();
+    pub fn calibrate(&mut self) -> Result<(), SerialError> {
+        let ret: u8 = self.send_cmd(0x80, 0x00u8)?;
         if ret == 1 {
             Ok(())
         } else {
-            Err(())
+            Err(SerialError::Undefined)
         }
     }
 
@@ -414,7 +416,7 @@ impl<T: Serial> Servo42C<T> {
 }
 
 ///set zero mode(how to return to zero on poweron)
-impl<T: Serial> Servo42C<T> {
+impl<T: Serial, V: MovementController> Servo42C<T, V> {
     /**
      Set the mode of zeroMode
     （Same as the " 0_Mode " option on screen）
@@ -494,7 +496,7 @@ impl<T: Serial> Servo42C<T> {
 }
 
 //Set PID/ACC/Torque command
-impl<T: Serial> Servo42C<T> {
+impl<T: Serial, V: MovementController> Servo42C<T, V> {
     /**
     Set the position Kp parameter
     */
@@ -559,7 +561,7 @@ impl<T: Serial> Servo42C<T> {
 }
 
 //Serial control comands
-impl<T: Serial> Servo42C<T> {
+impl<T: Serial, V: MovementController> Servo42C<T, V> {
     /**
     Set the En pin status in CR_UART mode.
     */
@@ -622,6 +624,7 @@ mod tests {
     use super::*;
 
     use serial::test::SerialTest;
+    use crate::motortrait::Linear;
     macro_rules! test_motor {
         /*($name:ident ($($arg:expr),*) ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
@@ -636,7 +639,7 @@ mod tests {
         ($name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
             fn $name(){
-                let mut servo=Servo42C::new(SerialTest::default()).unwrap();
+                let mut servo: Servo42C<SerialTest, Linear>=Servo42C::new(SerialTest::default()).unwrap();
                 servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
 
                 assert_eq!(servo.$name($($arg),*).unwrap(), $res);

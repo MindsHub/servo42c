@@ -1,7 +1,12 @@
 {
     "rust-analyzer.linkedProjects": [
+        "./arduino_test/Cargo.toml",
+        "./Cargo.toml",
         "./serial/Cargo.toml",
-        "./serial/Cargo.toml",
-        "./serial/Cargo.toml"
-    ]
+    ],
+    "rust-analyzer.showUnlinkedFileNotification": false,
+    //"rust-analyzer.cargo.buildScripts.invocationStrategy": "per_workspace",
+    //"rust-analyzer.cargo.buildScripts.overrideCommand": ["cargo", "check", "--quiet", "--workspace", "--message-format=json"],
+    //"rust-analyzer.procMacro.attributes.enable": true,
+    //"rust-analyzer.diagnostics.disabled": ["unresolved-proc-macro"]
 }

@@ -11,3 +11,4 @@ serial ={path="../serial", default-features = false}
 [features]
 std=["serial/std"]
 default =["std"]
+arduino =["serial/arduino"]

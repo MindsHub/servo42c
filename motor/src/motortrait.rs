@@ -6,3 +6,8 @@ pub trait Motor {
     fn set_zero(&mut self);
     fn sync(&mut self);
 }
+
+pub trait MovementController{}
+
+pub struct Linear{}
+impl MovementController for Linear{}

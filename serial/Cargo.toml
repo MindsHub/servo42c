@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 serialport = { workspace = true, optional = true}
+embedded-hal = {workspace=true, optional=true}#optional =true
 
 [features]
+default=["arduino",]
 std = ["dep:serialport"]
-default=["std"]
+arduino=["dep:embedded-hal"]

@@ -4,7 +4,9 @@ use super::serialtrait::*;
 pub use serialport;
 pub use serialport::*;
 
-impl Serial for Box<dyn SerialPort + 'static> {
+impl Serial for  Box< dyn SerialPort + 'static> 
+
+    {
     fn read(&mut self, buf: &mut [u8]) -> std::result::Result<(), SerialError> {
         let mut readen = 0usize;
         let mut failed = 0usize;

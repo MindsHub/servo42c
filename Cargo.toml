@@ -3,3 +3,9 @@ members=["motor", "serial","servo42_test", ]#"arduino_test"
 resolver = "2"
 [workspace.dependencies]
 serialport = "4.2.1"
+embedded-hal = "0.2.7"
+
+[workspace.dependencies.arduino-hal]
+git = "https://github.com/rahix/avr-hal"
+rev = "7dfa6d322b9df98b2d98afe0e14a97afe0187ac1"
+features = ["arduino-uno"]
