@@ -1,9 +1,10 @@
 use std::{
-    time::{Duration, SystemTime}, vec,
+    time::{Duration, SystemTime},
+    vec,
 };
 
 use eframe::egui::{self};
-use motor::{servo42::Servo42C, motortrait::Linear};
+use motor::servo42::Servo42C;
 use serial::standard::{serialport, serialport::*};
 fn main() {
     let mut native_options = eframe::NativeOptions::default();
@@ -16,7 +17,7 @@ fn main() {
 }
 
 struct MyEguiApp {
-    m: Option<Servo42C<Box<dyn SerialPort>, Linear>>,
+    m: Option<Servo42C<Box<dyn SerialPort>>>,
     name: String,
     is_connect: bool,
     encoder: Vec<(f32, i64)>,
@@ -113,7 +114,7 @@ impl MyEguiApp {
             .map(|(x, y)| {
                 cont = cont + 1;
                 //let y = (*y as f64);
-                [*x as f64, (*y as f64)/3000.0]
+                [*x as f64, (*y as f64) / 3000.0]
             })
             .collect();
         let encoder = Line::new(encoder);
@@ -124,7 +125,6 @@ impl MyEguiApp {
             .show(ui, |plot_ui| {
                 plot_ui.line(encoder);
                 plot_ui.line(errors);
-            
             })
             .response
     }
@@ -151,17 +151,16 @@ impl eframe::App for MyEguiApp {
                                 .flow_control(serial::standard::FlowControl::None)
                                 .open()
                             {
-                                let mut m: Servo42C<Box<dyn SerialPort>, Linear> =
-                                    Servo42C::<Box<dyn SerialPort>, Linear> {
+                                let mut m: Servo42C<Box<dyn SerialPort>> =
+                                    Servo42C::<Box<dyn SerialPort>> {
                                         address: 0xe0,
                                         s: val,
                                         kp: 0x200,
                                         ki: 0x120,
                                         kd: 0x650,
                                         acc: 500,
-                                        ph: std::marker::PhantomData::default(),
                                     };
-                                let _=m.read_encoder_value().unwrap();
+                                let _ = m.read_encoder_value().unwrap();
                                 //m.goto(138, enc as u32);
                                 //while let Err(_) = m.read::<u8>(){};
                                 //let _: u8 = m.read().unwrap();
@@ -207,10 +206,7 @@ impl eframe::App for MyEguiApp {
                     if let Ok(val) = motor.read_encoder_value() {
                         self.correct += 1;
                         //println!("{val:?}");
-                        Some((
-                            self.start.elapsed().unwrap().as_secs_f32(),
-                            val,
-                        ))
+                        Some((self.start.elapsed().unwrap().as_secs_f32(), val))
                     } else {
                         self.invalid += 1;
                         None
@@ -226,10 +222,7 @@ impl eframe::App for MyEguiApp {
                     if let Ok(val) = motor.read_error() {
                         self.correct += 1;
                         println!("{val:?}");
-                        Some((
-                            self.start.elapsed().unwrap().as_secs_f32(),
-                            val as i64,
-                        ))
+                        Some((self.start.elapsed().unwrap().as_secs_f32(), val as i64))
                     } else {
                         self.invalid += 1;
                         None

@@ -1,13 +1,11 @@
-
 use core::ops::Shl;
 
 use serial::serialtrait::MySize;
 use serial::serialtrait::{Sendable, Serial, SerialError};
-use crate::motortrait::MovementController;
 
 use super::Servo42C;
 
-impl<T: Serial, V: MovementController> Servo42C<T, V> {
+impl<T: Serial> Servo42C<T> {
     pub fn send<Data: Sendable>(&mut self, code: u8, data: Data) -> Result<(), SerialError>
     where
         [(); <((u8, u8), (Data, u8))>::SIZE]:,
@@ -64,41 +62,41 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum Protection{
+pub enum Protection {
     Protected,
     UnProtected,
 }
-pub enum MotType{
+pub enum MotType {
     Deg1_8,
     Deg0_9,
 }
 
-pub enum WorkMode{
+pub enum WorkMode {
     CrOpen,
     CrVFoc,
     CrUART,
 }
 
-pub enum ActiveOn{
+pub enum ActiveOn {
     Low,
     High,
     Hold,
 }
-pub enum Dir{
+pub enum Dir {
     ClockWise,
     CounterClockWise,
 }
-pub enum BaudRate{
+pub enum BaudRate {
     B9600,
     B19200,
     B25000,
     B38400,
     B57600,
-    B115200
+    B115200,
 }
 
 //read impl block
-impl<T: Serial, V: MovementController> Servo42C<T, V> {
+impl<T: Serial> Servo42C<T> {
     /**
     read the encoder value (the motor should be calibrated)
     returns (carry, value)  where
@@ -163,18 +161,16 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
      */
     pub fn read_lock(&mut self) -> Result<Protection, SerialError> {
         let t: u8 = self.send_cmd(0x3E, ())?;
-        Ok(
-            if t==1{
-                Protection::Protected  
-            }else{
-                Protection::UnProtected
-            }
-        )
+        Ok(if t == 1 {
+            Protection::Protected
+        } else {
+            Protection::UnProtected
+        })
     }
 }
 
 ///set impl block
-impl<T: Serial, V: MovementController> Servo42C<T, V> {
+impl<T: Serial> Servo42C<T> {
     /**
     Calibrate the encoder
     （Same as the "Cal" option on screen）
@@ -200,10 +196,10 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
     status =0  Set fail.
     */
     pub fn set_mot_type(&mut self, mot_type: MotType) -> Result<(), SerialError> {
-        let to_send: u8=match mot_type{
+        let to_send: u8 = match mot_type {
             MotType::Deg0_9 => 0,
             MotType::Deg1_8 => 1,
-        };  
+        };
         let ret: u8 = self.send_cmd(0x81, to_send)?;
         if ret == 1 {
             Ok(())
@@ -222,7 +218,7 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
     status =0  Set fail
     */
     pub fn set_mode(&mut self, work_mode: WorkMode) -> Result<(), ()> {
-        let to_send: u8= match work_mode{
+        let to_send: u8 = match work_mode {
             WorkMode::CrOpen => 0,
             WorkMode::CrVFoc => 1,
             WorkMode::CrUART => 2,
@@ -274,10 +270,10 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
     - enable = 02   active always (Hold)
     */
     pub fn set_en_active(&mut self, active_on: ActiveOn) -> Result<(), ()> {
-        let to_send: u8=match active_on{
+        let to_send: u8 = match active_on {
             ActiveOn::Low => 0,
             ActiveOn::High => 1,
-            ActiveOn::Hold => 2
+            ActiveOn::Hold => 2,
         };
         let ret: u8 = self.send_cmd(0x85, to_send).unwrap();
         if ret == 1 {
@@ -294,7 +290,7 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
     - dir = 01   CCW
     */
     pub fn set_direction(&mut self, dir: Dir) -> Result<(), ()> {
-        let to_send: u8 = match dir{
+        let to_send: u8 = match dir {
             Dir::ClockWise => 0,
             Dir::CounterClockWise => 1,
         };
@@ -328,7 +324,7 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
     Same as the "Protect" option on screen
     */
     pub fn set_lock(&mut self, protection: Protection) -> Result<(), ()> {
-        let to_send: u8 = match protection{
+        let to_send: u8 = match protection {
             Protection::Protected => 0,
             Protection::UnProtected => 1,
         };
@@ -369,7 +365,7 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
      - baud = 06   115200
      */
     pub fn set_baudrate(&mut self, baud_rate: BaudRate) -> Result<(), ()> {
-        let to_send: u8 = match baud_rate{
+        let to_send: u8 = match baud_rate {
             BaudRate::B9600 => 0,
             BaudRate::B19200 => 1,
             BaudRate::B25000 => 2,
@@ -391,7 +387,8 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
      Slave address = addr + 0xe0
      addr from 0-9
      */
-    pub fn set_slave_address(&mut self, addr: u8) -> Result<(), ()> { //TODO enum?
+    pub fn set_slave_address(&mut self, addr: u8) -> Result<(), ()> {
+        //TODO enum?
         let ret: u8 = self.send_cmd(0x8B, addr).unwrap();
         if ret == 1 {
             Ok(())
@@ -416,7 +413,7 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
 }
 
 ///set zero mode(how to return to zero on poweron)
-impl<T: Serial, V: MovementController> Servo42C<T, V> {
+impl<T: Serial> Servo42C<T> {
     /**
      Set the mode of zeroMode
     （Same as the " 0_Mode " option on screen）
@@ -496,7 +493,7 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
 }
 
 //Set PID/ACC/Torque command
-impl<T: Serial, V: MovementController> Servo42C<T, V> {
+impl<T: Serial> Servo42C<T> {
     /**
     Set the position Kp parameter
     */
@@ -561,7 +558,7 @@ impl<T: Serial, V: MovementController> Servo42C<T, V> {
 }
 
 //Serial control comands
-impl<T: Serial, V: MovementController> Servo42C<T, V> {
+impl<T: Serial> Servo42C<T> {
     /**
     Set the En pin status in CR_UART mode.
     */
@@ -624,7 +621,6 @@ mod tests {
     use super::*;
 
     use serial::test::SerialTest;
-    use crate::motortrait::Linear;
     macro_rules! test_motor {
         /*($name:ident ($($arg:expr),*) ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
@@ -639,7 +635,7 @@ mod tests {
         ($name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
             fn $name(){
-                let mut servo: Servo42C<SerialTest, Linear>=Servo42C::new(SerialTest::default()).unwrap();
+                let mut servo: Servo42C<SerialTest>=Servo42C::new(SerialTest::default()).unwrap();
                 servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
 
                 assert_eq!(servo.$name($($arg),*).unwrap(), $res);

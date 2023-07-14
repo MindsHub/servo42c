@@ -7,11 +7,11 @@ use serialtrait::{MySize, Sendable};
 
 pub mod serialtrait;
 
-#[cfg(all(feature ="arduino", not(feature = "std")))]
+#[cfg(all(feature = "arduino", not(feature = "std")))]
 pub mod arduino;
-#[cfg(feature ="std")]
+#[cfg(feature = "std")]
 pub mod standard;
-#[cfg(feature ="std")]
+#[cfg(feature = "std")]
 //#[cfg(test)]
 pub mod test;
 
