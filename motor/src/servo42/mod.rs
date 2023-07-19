@@ -1,4 +1,3 @@
-use core::time::Duration;
 
 use ::serial::serialtrait::{Serial, SerialError};
 use core::fmt::Debug;

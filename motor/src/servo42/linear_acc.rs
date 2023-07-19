@@ -34,17 +34,16 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
         todo!()
     }
 
-    fn new() -> Self::Builder {
-        todo!()
-    }
-
     fn get_info(&mut self) -> Self::Info {
         todo!()
     }
+
 }
 
-impl<T: Serial> MotorBuilder<Servo42LinearAcc<T>> for Servo42LinearAccBuilder<T> {
+impl<T: Serial> MotorBuilder for Servo42LinearAccBuilder<T> {
     fn build(self) -> Servo42LinearAcc<T> {
         todo!()
     }
+
+    type M=Servo42LinearAcc<T>;
 }

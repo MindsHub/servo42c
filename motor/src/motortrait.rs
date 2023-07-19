@@ -3,11 +3,11 @@ use core::fmt::Debug;
 use core::time::Duration;
 pub trait Motor
 where
-    Self: Sized,
+    //Self: Sized,
 {
     type PosUnit;
     type Info: Debug;
-    type Builder: MotorBuilder<Self>;
+    type Builder: MotorBuilder;
     ///set a new objective
     fn goto(&mut self, pos: Self::PosUnit) -> Result<(), ()>;
     ///get printable info
@@ -18,12 +18,16 @@ where
     fn reset(&mut self);
     ///set zero here
     fn set_zero(&mut self);
-    ///Generic Function for set max speed, acceleration...
-    fn new() -> Self::Builder;
+    //Generic Function for set max speed, acceleration...
+    //fn new() -> Self::Builder;
+    
 }
-pub trait MotorBuilder<T: Motor>
+
+pub trait MotorBuilder
 where
-    Self: Sized,
+    //Self: Sized,
 {
-    fn build(self) -> T;
+    type M: Motor;
+    fn build(self) -> Self::M;
+    //fn new()->Self;
 }

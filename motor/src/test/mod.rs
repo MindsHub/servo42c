@@ -7,7 +7,6 @@ pub struct MotorTest{
     pos: f64,
     max_speed: f64,
     acc: f64,
-    spazio_di_frenata: f64,
 }
 
 // builder, tutti i parametri che voglio siano configurabili vanno dichiarati qui
@@ -15,7 +14,14 @@ pub struct MotorTestBuilder{
     max_speed: f64,
     acc: f64,
 }
-
+fn abs(x: f64)->f64{
+   if x<0.{
+    -x
+   }
+    else {
+        x
+    }
+}
 // implementazione dell'interfaccia motore
 impl Motor for MotorTest{
     //che unità mi aspetto per la posizione
@@ -46,21 +52,21 @@ impl Motor for MotorTest{
         //calcolo lo spazio di frenata s=V^2/2a 
         let d_stop: f64 = self.cur_speed*self.cur_speed/2./self.acc;
         let distanza_rimanente=self.obbiettivo-self.pos;
-        if distanza_rimanente>=d_stop{
-            //se mi manca ancora tanto accelero
-            //se la distanza che ci manca ha lo stesso segno della velocità stiamo andando nella direzione corretta
-            if distanza_rimanente*self.cur_speed>=0.{
-                let da_calare = time_from_last.as_secs_f64()*self.acc;
-                self.s
-            }else{
-                //direzione sbagliata
 
-            }
+        //direzione sbagliata
+        if distanza_rimanente*self.cur_speed<0.{
+            let da_aggiungere: f64 = time_from_last.as_secs_f64()*self.acc;
+            //self.cur_speed+=self.cur_speed.signum();
+            return Ok(());
+        }
+
+        if abs(distanza_rimanente)>=abs(d_stop){
+            //se mi manca ancora tanto accelero
+            
         }else{
             //freno
         }
-        
-        todo!()
+        return Ok(());
     }
 
     // resettiamo, troviamo finecorsa ecc
@@ -75,12 +81,13 @@ impl Motor for MotorTest{
         self.cur_speed=0.;
     }
 
-    fn new() -> Self::Builder {
-        Self::Builder::new()
-    }
+    
 }
 
-impl MotorBuilder<MotorTest> for MotorTestBuilder{
+
+
+impl MotorBuilder for MotorTestBuilder{
+    type M = MotorTest;
     fn build(self) -> MotorTest {
         MotorTest {
             obbiettivo: 0.0,
@@ -88,13 +95,13 @@ impl MotorBuilder<MotorTest> for MotorTestBuilder{
             pos: 0.0,
             max_speed: self.max_speed,
             acc: self.acc,
-            
         }
     }
+    
 }
 
 impl MotorTestBuilder{
-    pub fn new()->MotorTestBuilder{
+    fn new()->MotorTestBuilder{
         MotorTestBuilder { 
             max_speed: 10.,
             acc: 10.,
@@ -114,12 +121,12 @@ impl MotorTestBuilder{
 mod test{
     use crate::motortrait::{Motor, MotorBuilder};
 
-    use super::MotorTest;
+    use super::{MotorTest, MotorTestBuilder};
 
 
     #[test]
     fn test_build(){
-        let _m = MotorTest::new()
+        let _m = MotorTestBuilder::new()
             .set_acc(11.0)
             .set_max_speed(11.0)
             .build();
