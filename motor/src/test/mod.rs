@@ -85,7 +85,6 @@ impl Motor for MotorTest{
 }
 
 
-
 impl MotorBuilder for MotorTestBuilder{
     type M = MotorTest;
     fn build(self) -> MotorTest {
@@ -97,16 +96,10 @@ impl MotorBuilder for MotorTestBuilder{
             acc: self.acc,
         }
     }
-    
 }
 
 impl MotorTestBuilder{
-    fn new()->MotorTestBuilder{
-        MotorTestBuilder { 
-            max_speed: 10.,
-            acc: 10.,
-        }
-    }
+    
     pub fn set_max_speed(mut self, max_speed: f64)->Self{
         self.max_speed=max_speed;
         self
@@ -115,13 +108,19 @@ impl MotorTestBuilder{
         self.acc=max_acc;
         self
     }
+    pub fn new() -> Self {
+        Self { 
+            max_speed: 10.,
+            acc: 10.
+        }
+    }
 }
 
 #[cfg(test)]
 mod test{
-    use crate::motortrait::{Motor, MotorBuilder};
+    use crate::motortrait::MotorBuilder;
 
-    use super::{MotorTest, MotorTestBuilder};
+    use super::MotorTestBuilder;
 
 
     #[test]

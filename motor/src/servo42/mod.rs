@@ -12,18 +12,38 @@ pub struct Servo42C<T: Serial> {
     pub ki: u16,
     pub kd: u16,
     pub acc: u16,
+    pub microstep: u8,
 }
 
 impl<T: Serial> Servo42C<T> {
-    pub fn new(s: T) -> Result<Servo42C<T>, SerialError> {
-        let t = Servo42C::<T> {
+    pub fn empty_new(s: T) -> Result<Servo42C<T>, SerialError> {
+        let  t = Servo42C::<T> {
             address: 0xe0,
             s,
             kp: 1616,
             ki: 288,
             kd: 1616,
             acc: 286,
+            microstep: 16,
         };
+        Ok(t)
+    }
+
+    pub fn new(s: T) -> Result<Servo42C<T>, SerialError> {
+        let mut t = Servo42C::<T> {
+            address: 0xe0,
+            s,
+            kp: 1616,
+            ki: 288,
+            kd: 1616,
+            acc: 286,
+            microstep: 16,
+        };
+        t.set_kp(t.kp)?;
+        t.set_ki(t.ki)?;
+        t.set_kd(t.kd)?;
+        t.set_acc(t.acc)?;
+        t.set_microstep(t.microstep)?;
         Ok(t)
     }
 }

@@ -13,3 +13,4 @@ embedded-hal = {workspace=true, optional=true}#optional =true
 default=["arduino",]
 std = ["dep:serialport"]
 arduino=["dep:embedded-hal"]
+debug=[]

@@ -25,9 +25,8 @@ where
 
 pub trait MotorBuilder
 where
-    //Self: Sized,
 {
     type M: Motor;
     fn build(self) -> Self::M;
-    //fn new()->Self;
 }
+

@@ -105,7 +105,7 @@ impl<T: Serial> Servo42C<T> {
      */
     pub fn read_encoder_value(&mut self) -> Result<i64, SerialError> {
         let (rotations, phase): (i32, u16) = self.send_cmd(0x30, ())?;
-        let tot = (rotations as i64).shl(16) + phase as i64;
+        let tot = ((rotations as i64).shl(16) + phase as i64)/182i64;
         Ok(tot)
     }
 
@@ -248,14 +248,17 @@ impl<T: Serial> Servo42C<T> {
     }
 
     /**
+     * Supports subdivision from 1 to 256.  
+    (Default: 16)
     Set microstep
     Note:the new micstep will show in the screen of MStep option.
     status =1  Set success.
     status =0  Set fail.
     */
-    pub fn set_microstep(&mut self, t: u8) -> Result<(), SerialError> {
-        let ret: u8 = self.send_cmd(0x84, t)?;
+    pub fn set_microstep(&mut self, mstep: u8) -> Result<(), SerialError> {
+        let ret: u8 = self.send_cmd(0x84, mstep)?;
         if ret == 1 {
+            self.microstep=mstep;
             Ok(())
         } else {
             Err(SerialError::Undefined)
@@ -576,20 +579,26 @@ impl<T: Serial> Servo42C<T> {
     }
 
     /**
-     Set 0_Speed
-     run the motor forward / reverse in a Constant speed.
-     Direction : The highest 1bit of VAL.
-     Speed : The lowest 7bit of VAL.
-     for example：
-     The Vrpm calculation formula is:
+    Set Speed
+    run the motor forward / reverse in a Constant speed.
+    Direction : The highest 1bit of VAL.
+    Speed : The lowest 7bit of VAL.
+    for example：
+    The Vrpm calculation formula is:
     Vrpm = (Speed × 30000)/(Mstep × 200)(RPM)   (1.8 degree motor)
     Vrpm = (Speed × 30000)/(Mstep × 400)(RPM)   (0.9 degree motor)
+    Note: the Vrpm no great than 2000RPM.
      */
-    pub fn set_speed(&mut self, dir: bool, mut speed: u8) -> Result<u8, SerialError> {
-        if dir {
-            speed |= 0x80;
+    pub fn set_speed(&mut self,  speed: i8) -> Result<u8, SerialError> {
+        if speed as f32*30000./(self.microstep as f32*200.)>2000.{
+            return Err(SerialError::Undefined)
         }
-        let ret: u8 = self.send_cmd(0xF6, speed)?;
+        let to_send= if speed<0 {
+            -speed as u8 | 0x80
+        }else{
+            speed as u8
+        } as u8;
+        let ret: u8 = self.send_cmd(0xF6, to_send)?;
         Ok(ret)
     }
 
@@ -622,20 +631,10 @@ mod tests {
 
     use serial::test::SerialTest;
     macro_rules! test_motor {
-        /*($name:ident ($($arg:expr),*) ($($val:literal) *)->($($ret:literal) *)) => {
-            #[test]
-            fn $name(){
-                let mut servo=Servo42C::new(SerialTest::default()).unwrap();
-                servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
-
-                let _ =servo.$name($($arg),*);
-            }
-        };*/
-
         ($name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
             fn $name(){
-                let mut servo: Servo42C<SerialTest>=Servo42C::new(SerialTest::default()).unwrap();
+                let mut servo: Servo42C<SerialTest>=Servo42C::empty_new(SerialTest::default()).unwrap();
                 servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
 
                 assert_eq!(servo.$name($($arg),*).unwrap(), $res);

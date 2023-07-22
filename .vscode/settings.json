@@ -3,6 +3,7 @@
         "./arduino_test/Cargo.toml",
         "./Cargo.toml",
         "./serial/Cargo.toml",
+        
     ],
     "rust-analyzer.showUnlinkedFileNotification": false,
     //"rust-analyzer.cargo.buildScripts.invocationStrategy": "per_workspace",
