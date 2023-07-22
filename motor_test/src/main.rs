@@ -6,6 +6,7 @@ use std::{
 use eframe::egui::{self};
 use motor::{servo42::linear_acc::{Servo42LinearAcc, Servo42LinearAccBuilder}, motortrait::{MotorBuilder, Motor}};
 use serial::standard::{serialport, serialport::*};
+pub mod motorThread;
 fn main() {
     let mut native_options = eframe::NativeOptions::default();
     native_options.vsync = false;
@@ -177,14 +178,9 @@ impl eframe::App for MyEguiApp {
                         }
                     }
                 });
-                //self.set_kp(ui);
-                //self.set_ki(ui);
-                //self.set_kd(ui);
-                //self.set_acc(ui);
-                //self.plot(ui);
                 if let Some(motor) = &mut self.m {
-                    motor.update(self.prec_frame.elapsed().unwrap());
-                    println!("{} {}", motor.pos, motor.obbiettivo);
+                    //motor.update(self.prec_frame.elapsed().unwrap());
+                    //println!("{} {}", motor.pos, motor.obbiettivo);
                     self.prec_frame=SystemTime::now();
                 }
 
@@ -195,18 +191,11 @@ impl eframe::App for MyEguiApp {
                     self.dir = !self.dir;
                     if let Some(motor) = &mut self.m {
                         if self.dir{
+                            
                             motor.goto(500.0);
                         }else{
                             motor.goto(500.0);
                         }
-                        /*if motor.pos.abs()<300{
-                            let _ = motor.m.set_zero();
-                            let _ = motor.m.stop();
-
-                        }*/
-                        
-                       //let _ = motor.set_microstep(16);
-                       // let _ = motor.set_speed(self.dir, 10);
                     }
                 }
                 ui.heading(format!(
