@@ -195,9 +195,9 @@ impl eframe::App for MyEguiApp {
                     self.dir = !self.dir;
                     if let Some(motor) = &mut self.m {
                         if self.dir{
-                            motor.goto(500.0);
+                            motor.goto(0.0);
                         }else{
-                            motor.goto(500.0);
+                            motor.goto(360.0);
                         }
                         /*if motor.pos.abs()<300{
                             let _ = motor.m.set_zero();
