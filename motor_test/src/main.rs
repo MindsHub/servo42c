@@ -1,12 +1,13 @@
 use std::{
-    time::{Duration, SystemTime},
-    vec,
+    vec, sync::mpsc::{Receiver, Sender},
 };
 
 use eframe::egui::{self};
-use motor::{servo42::linear_acc::{Servo42LinearAcc, Servo42LinearAccBuilder}, motortrait::{MotorBuilder, Motor}};
-use serial::standard::{serialport, serialport::*};
-pub mod motorThread;
+use motor_thread::{MotorState, MotorComand};
+use motor::servo42::serial::BaudRate;
+use serial::standard::serialport;
+use crate::motor_thread::new_thread;
+pub mod motor_thread;
 fn main() {
     let mut native_options = eframe::NativeOptions::default();
     native_options.vsync = false;
@@ -18,63 +19,29 @@ fn main() {
 }
 
 struct MyEguiApp {
-    m: Option<Servo42LinearAcc<Box<dyn SerialPort>>>,
     name: String,
-    is_connect: bool,
-    encoder: Vec<(f32, i64)>,
-    errors: Vec<(f32, i64)>,
-    correct: usize,
-    invalid: usize,
-    t: SystemTime,
-    start: SystemTime,
-    prec_frame: SystemTime,
-    dir: bool,
+    baudrate: BaudRate,
+    connection: Option<(Receiver<MotorState>, Sender<MotorComand>)>,
+    connection_checkbox: bool,
+    pos_history: Vec<f64>,
+    obj_history: Vec<f64>,
+    time_history: Vec<f64>,
 }
 
 impl MyEguiApp {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        /*
-        let mut m = <Servo42C<SerialTest>>::default();
-        let _ =m.set_microstep(16);
-        let _ =m.set_zero();
-        let _=m.set_subdivision_interpolation(true);
-        let _=m.set_lock(false);
-        /*let _=m.set_acc(None);
-        m.set_kp(None);
-        m.set_ki(None);
-        m.set_kd(None);*/
-        //let _ =m.set_speed(false, 50);
-        //let _ =m.set_speed(true, 2);
-        let _ = m.goto(127, 10000000);
-        //let _ =m.stop();
-
-        let mut average=0.0;
-        let mut t=SystemTime::now();
-        sleep(Duration::from_millis(100000));
-        loop{
-            m.read_encoder_value();
-            let fps=1_000_000.0f64/t.elapsed().unwrap().as_micros() as f64;
-            average=(average*99.0+fps)/100.0;
-            t=SystemTime::now();
-            //println!("{}", average);
-        }*/
-        //m.calibrate().unwrap();*/
         MyEguiApp {
-            m: Default::default(),
             name: "/dev/ttyACM0".to_string(),
-            is_connect: false,
-            encoder: vec![],
-            errors: vec![],
-            correct: 5,
-            invalid: 0,
-            t: SystemTime::now(),
-            start: SystemTime::now(),
-            prec_frame: SystemTime::now(),
-            dir: true,
+            baudrate: BaudRate::B38400,
+            connection: None,
+            connection_checkbox: false,
+            pos_history: vec![],
+            obj_history: vec![],
+            time_history: vec![],
         }
     }
 }
-
+/*
 macro_rules! cmd {
     ( $func:ident, $value:ident) => {
         fn $func(&mut self, ui: &mut egui::Ui) {
@@ -90,38 +57,29 @@ macro_rules! cmd {
             });
         }
     };
-}
-/*impl MyEguiApp {
-    cmd!(set_kp, kp);
-    cmd!(set_ki, ki);
-    cmd!(set_kd, kd);
-    cmd!(set_acc, acc);
 }*/
 
 impl MyEguiApp {
     fn plot(&self, ui: &mut egui::Ui) -> egui::Response {
         use egui::plot::{Line, PlotPoints};
-        let mut cont = 1u32;
-        let encoder: PlotPoints = self
-            .encoder
+        let pos: PlotPoints = self
+            .time_history
             .iter()
+            .zip(self.pos_history.clone())
             .map(|(x, y)| {
-                cont = cont + 1;
-                let y = (*y as f64) / 65536.0;
-                [*x as f64, y]
+                [*x, y]
             })
             .collect();
-        let errors: PlotPoints = self
-            .errors
+        let obj: PlotPoints = self
+            .time_history
             .iter()
+            .zip(self.obj_history.clone())
             .map(|(x, y)| {
-                cont = cont + 1;
-                //let y = (*y as f64);
-                [*x as f64, (*y as f64) / 3000.0]
+                [*x , y]
             })
             .collect();
-        let encoder = Line::new(encoder);
-        let errors = Line::new(errors);
+        let encoder = Line::new(pos);
+        let errors = Line::new(obj);
         egui::plot::Plot::new("example_plot")
             .height(200.0)
             //.data_aspect(cont as f32)
@@ -131,126 +89,88 @@ impl MyEguiApp {
             })
             .response
     }
+
+    ///Function for display all connection settings
+    fn connection_settings(&mut self, ui: &mut egui::Ui){
+        ui.horizontal(|ui| {
+            egui::ComboBox::from_id_source(0)
+                .selected_text(&self.name)
+                .show_ui(ui, |ui|{
+                    let ports = serialport::available_ports().expect("No ports found!");
+                    for x in ports{
+                        ui.selectable_value(&mut self.name, x.port_name.clone(), &x.port_name);
+                    }
+                });
+
+            egui::ComboBox::from_id_source(1)
+                .selected_text(format!("{:?}", self.baudrate))
+                .show_ui(ui, |ui|{
+                    ui.selectable_value(&mut self.baudrate, BaudRate::B9600, "9600");
+                    ui.selectable_value(&mut self.baudrate, BaudRate::B19200, "19200");
+                    ui.selectable_value(&mut self.baudrate, BaudRate::B25000, "25000");
+                    ui.selectable_value(&mut self.baudrate, BaudRate::B38400, "38400");
+                    ui.selectable_value(&mut self.baudrate, BaudRate::B57600, "57600");
+                    ui.selectable_value(&mut self.baudrate, BaudRate::B115200, "115200");
+                });
+                
+            if ui
+                .add(egui::Checkbox::new(&mut self.connection_checkbox, "Connect"))
+                .changed()
+            {
+                
+                if self.connection_checkbox {
+                    //if want to connect
+                    println!("connecting");
+                    match new_thread(&self.name, self.baudrate.clone().into()){
+                        Ok(conn) => {
+                            self.connection=Some(conn);
+                            self.connection_checkbox=true;
+                            self.obj_history=Vec::new();
+                            self.pos_history=Vec::new();
+                            self.time_history=Vec::new();
+                        },
+                        Err(err) => {
+                            println!("impossible to connect: {:?}", err);
+                            self.connection_checkbox=false;
+                            self.connection=None;
+                        },
+                    }
+
+                } else {
+                    println!("disconnecting");
+                    //if want to disconnect
+                    if let Some((_, conn)) = &self.connection{
+                        let _ = conn.send(MotorComand::KillThread);
+                    }
+                    self.connection_checkbox=false;
+                    self.connection = None;
+                    
+                }
+            }
+        });
+    }
 }
 
 impl eframe::App for MyEguiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.vertical(|ui| {
-                ui.horizontal(|ui| {
-                    ui.add(egui::TextEdit::singleline(&mut self.name));
-                    if ui
-                        .add(egui::Checkbox::new(&mut self.is_connect, "Connect"))
-                        .changed()
-                    {
-                        if self.is_connect {
-                            println!("connecting");
-                            if let Ok(val) = serialport::new(&self.name, 38_400)
-                                .timeout(Duration::from_millis(10))
-                                .parity(Parity::None)
-                                //.baud_rate(115200)
-                                .stop_bits(serial::standard::StopBits::One)
-                                .data_bits(DataBits::Eight)
-                                .flow_control(serial::standard::FlowControl::None)
-                                .open()
-                            {
-                                let mut m: Servo42LinearAcc<Box<dyn SerialPort>> =
-                                    Servo42LinearAccBuilder::<Box<dyn SerialPort>>::new(val)
-                                    .build();
-                               // let _ = m.read_encoder_value().unwrap();
-                                //m.goto(138, enc as u32);
-                                //while let Err(_) = m.read::<u8>(){};
-                                //let _: u8 = m.read().unwrap();
-                                //let _ = m.reset();
-                                //let _ = m.set_zero_mode(2);
-                                //let _ = m.set_zero();
-                                self.m = Some(m);
-                                self.start = SystemTime::now();
-                                self.encoder = vec![];
-                                self.correct = 5;
-                                self.invalid = 0;
-                            } else {
-                                self.is_connect = false;
-                            }
-                        } else {
-                            self.m = None;
-                            println!("disconnecting");
-                        }
-                    }
+            //if we are connected
+            if let Some((reader, _)) = &self.connection{
+                //load all available data
+                reader.try_iter().for_each(|val|{
+                    self.obj_history.push(val.obbiettivo);
+                    self.pos_history.push(val.pos as f64);
+                    self.time_history.push(val.timing.as_secs_f64());
                 });
-                if let Some(motor) = &mut self.m {
-                    //motor.update(self.prec_frame.elapsed().unwrap());
-                    //println!("{} {}", motor.pos, motor.obbiettivo);
-                    self.prec_frame=SystemTime::now();
-                }
 
-                
-
-                if self.t.elapsed().unwrap() > Duration::from_secs(10) {
-                    self.t = SystemTime::now();
-                    self.dir = !self.dir;
-                    if let Some(motor) = &mut self.m {
-                        if self.dir{
-                            
-                            motor.goto(500.0);
-                        }else{
-                            motor.goto(360.0);
-                        }
-                    }
-                }
-                ui.heading(format!(
-                    "correct={} invalid={} rap={} cps={}",
-                    self.correct,
-                    self.invalid,
-                    self.correct as f32 / (self.invalid + self.correct) as f32,
-                    (self.invalid + self.correct) as f32
-                        / self.start.elapsed().unwrap().as_secs_f32()
-                ));
-                let data = if let Some(motor) = &mut self.m {
-                    if let val = 10 {
-                        self.correct += 1;
-                        //println!("{val:?}");
-                        Some((self.start.elapsed().unwrap().as_secs_f32(), val))
-                    } else {
-                        self.invalid += 1;
-                        None
-                    }
-                } else {
-                    None
-                };
-                if let Some(x) = data {
-                    //println!("{x:?}");
-                    self.encoder.push(x);
-                }
-                let data = if let Some(motor) = &mut self.m {
-                    if let val= 0 {
-                        self.correct += 1;
-                        //println!("{val:?}");
-                        Some((self.start.elapsed().unwrap().as_secs_f32(), val as i64))
-                    } else {
-                        self.invalid += 1;
-                        None
-                    }
-                } else {
-                    None
-                };
-                if let Some(x) = data {
-                    //println!("{x:?}");
-                    self.errors.push(x);
-                }
+            }
+            ui.vertical(|ui| {
+                self.connection_settings(ui);
+                self.plot(ui);
             });
+            
+            
         });
-
-        //let _ =self.m.goto(178, 1);
-        //sleep(Duration::from_secs(1));
-        /*let t =self.m.goto(50, 1);
-        if t==2{
-             println!("WTF");
-        }
-        sleep(Duration::from_secs(1));*/
-        /*if let Ok(_t) = self.m.goto(50, 1000){
-
-        }*/
 
         ctx.request_repaint();
     }

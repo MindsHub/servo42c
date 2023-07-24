@@ -7,7 +7,7 @@ publish=false
 [dependencies]
 eframe="0.22.0"
 motor={path="../motor"}
-serial={path="../serial", features=["std"], default_features=false}
+serial={path="../serial", features=["std", "debug"], default_features=false}
 
 [[bin]]
 name="motor_test"
