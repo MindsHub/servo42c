@@ -1,5 +1,3 @@
-use core::ops::Shl;
-
 use serial::serialtrait::MySize;
 use serial::serialtrait::{Sendable, Serial, SerialError};
 
@@ -86,6 +84,7 @@ pub enum Dir {
     ClockWise,
     CounterClockWise,
 }
+#[derive(Debug, PartialEq, Clone)]
 pub enum BaudRate {
     B9600,
     B19200,
@@ -95,18 +94,35 @@ pub enum BaudRate {
     B115200,
 }
 
+impl Into<u32> for BaudRate{
+    fn into(self) -> u32 {
+        match self{
+            BaudRate::B9600 => 9600,
+            BaudRate::B19200 => 19200,
+            BaudRate::B25000 => 25000,
+            BaudRate::B38400 => 38400,
+            BaudRate::B57600 => 57600,
+            BaudRate::B115200 => 115200,
+        }
+    }
+}
+
 //read impl block
 impl<T: Serial> Servo42C<T> {
     /**
+     * this implementation returns an f64 that rappresent the number of full rotations
     read the encoder value (the motor should be calibrated)
     returns (carry, value)  where
     - carry is the value of the encoder (giri?)
     - current value of the encoder (fase)
      */
-    pub fn read_encoder_value(&mut self) -> Result<i64, SerialError> {
+    pub fn read_encoder_value(&mut self) -> Result<f64, SerialError> {
+        //even if we read an int is easyer to manage an f64 (64 bit so we manage even big numbers losless)
+        //we retourn 
         let (rotations, phase): (i32, u16) = self.send_cmd(0x30, ())?;
-        let tot = ((rotations as i64).shl(16) + phase as i64)/182i64;
-        Ok(tot)
+        let output: f64 = rotations as f64+(phase as f64)/65536.;
+        //let tot = ((rotations as i64).shl(16) + phase as i64)/182i64;
+        Ok(output)
     }
 
     /**
@@ -605,9 +621,9 @@ impl<T: Serial> Servo42C<T> {
     /**
     Stop motor
     */
-    pub fn stop(&mut self) -> Result<u8, ()> {
-        let ret: u8 = self.send_cmd(0xF7, ()).unwrap();
-        Ok(ret)
+    pub fn stop(&mut self) -> Result<u8, SerialError> {
+        self.send_cmd(0xF7, ())
+        
     }
     /**
     Calibrate the encoder
@@ -642,7 +658,7 @@ mod tests {
         };
     }
 
-    test_motor!(read_encoder_value()->16384, (0xe0 0x30 0x10)->(0xe0 00 00 00 00 0x40 00 0x20));
+    test_motor!(read_encoder_value()->0.25, (0xe0 0x30 0x10)->(0xe0 00 00 00 00 0x40 00 0x20));
     test_motor!(read_recived_pulses()->256, (0xe0 0x33 0x13)->(0xe0 00 00 0x01 00 0xe1));
     test_motor!(read_error()->183, (0xe0 0x39 0x19)->(0xe0 00 0xB7 0x97));
     test_motor!(read_en_pin()->true, (0xe0 0x3a 0x1a)->(0xe0 0x01 0xe1));

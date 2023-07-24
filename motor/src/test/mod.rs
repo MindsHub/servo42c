@@ -1,3 +1,5 @@
+use serial::serialtrait::SerialError;
+
 use crate::{motortrait::{Motor, MotorBuilder}, servo42::MotorError};
 
 //struttura di test, qua dichiaro tutto quello che mi serve
@@ -87,14 +89,14 @@ impl Motor for MotorTest{
 
 impl MotorBuilder for MotorTestBuilder{
     type M = MotorTest;
-    fn build(self) -> MotorTest {
-        MotorTest {
+    fn build(self) -> Result<MotorTest, SerialError> {
+        Ok(MotorTest {
             obbiettivo: 0.0,
             cur_speed: 0.0,
             pos: 0.0,
             max_speed: self.max_speed,
             acc: self.acc,
-        }
+        })
     }
 }
 

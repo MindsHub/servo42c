@@ -37,8 +37,9 @@ impl<T: Serial> Servo42C<T> {
             ki: 288,
             kd: 1616,
             acc: 286,
-            microstep: 16,
+            microstep: 128,
         };
+        t.stop()?;
         t.set_kp(t.kp)?;
         t.set_ki(t.ki)?;
         t.set_kd(t.kd)?;

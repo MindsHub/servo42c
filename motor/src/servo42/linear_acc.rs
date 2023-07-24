@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use serial::serialtrait::Serial;
+use serial::serialtrait::{Serial, SerialError};
 
 use super::{Motor, MotorBuilder};
 
@@ -10,7 +10,7 @@ pub struct Servo42LinearAcc<T: Serial> {
     pub m: Servo42C<T>,
     pub obbiettivo: f64,
     cur_speed: f64,
-    pub pos: i64,
+    pub pos: f64,
     max_speed: f64,
     acc: f64,
 }
@@ -37,11 +37,12 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
         
         //calcolo lo spazio di frenata s=V^2/2a 
         //let d_stop: f64 = self.cur_speed*self.cur_speed/2./self.acc;
+        //self.m.set_speed(10).unwrap();
         let distanza_rimanente=self.obbiettivo-self.pos as f64;
         if distanza_rimanente<0.{
-            self.m.set_speed(1).unwrap();
+            self.m.set_speed(10).unwrap();
         }else{
-            self.m.set_speed(-1).unwrap();
+            self.m.set_speed(-10).unwrap();
         }
         Ok(())
     }
@@ -63,16 +64,15 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
 impl<T: Serial> MotorBuilder for Servo42LinearAccBuilder<T> {
     type M=Servo42LinearAcc<T>;
 
-    fn build(self) -> Self::M {
-        Self::M{
-            m: Servo42C::new(self.s).unwrap(),
+    fn build(self) -> Result<Self::M, SerialError> {
+        Ok(Self::M{
+            m: Servo42C::new(self.s)?,
             obbiettivo: 0.,
             cur_speed: 0.,
-            pos: 0,
+            pos: 0.,
             max_speed: self.max_speed,
             acc: self.acc,
-            
-        }
+        })
     }
 
 }

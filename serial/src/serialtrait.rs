@@ -5,6 +5,7 @@ pub enum SerialError {
     ConnectionBreak,
     Interrupted,
 }
+
 pub trait Serial {
     fn read(&mut self, buf: &mut [u8]) -> Result<(), SerialError>;
     fn write(&mut self, buf: &[u8]) -> Result<(), SerialError>;

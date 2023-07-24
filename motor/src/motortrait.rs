@@ -1,3 +1,5 @@
+use serial::serialtrait::SerialError;
+
 use crate::servo42::MotorError;
 use core::fmt::Debug;
 use core::time::Duration;
@@ -27,6 +29,6 @@ pub trait MotorBuilder
 where
 {
     type M: Motor;
-    fn build(self) -> Self::M;
+    fn build(self) -> Result<Self::M, SerialError>;
 }
 

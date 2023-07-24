@@ -20,7 +20,7 @@ struct MyEguiApp {
     m: Option<Servo42C<Box<dyn SerialPort>>>,
     name: String,
     is_connect: bool,
-    encoder: Vec<(f32, i64)>,
+    encoder: Vec<(f32, f64)>,
     errors: Vec<(f32, i64)>,
     correct: usize,
     invalid: usize,
