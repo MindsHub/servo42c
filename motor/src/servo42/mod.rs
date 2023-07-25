@@ -1,4 +1,3 @@
-
 use ::serial::serialtrait::{Serial, SerialError};
 use core::fmt::Debug;
 
@@ -16,8 +15,8 @@ pub struct Servo42C<T: Serial> {
 }
 
 impl<T: Serial> Servo42C<T> {
-    pub fn empty_new(s: T) -> Result<Servo42C<T>, SerialError> {
-        let  t = Servo42C::<T> {
+    pub fn empty_new(s: T) -> Servo42C<T> {
+        Servo42C::<T> {
             address: 0xe0,
             s,
             kp: 1616,
@@ -25,20 +24,11 @@ impl<T: Serial> Servo42C<T> {
             kd: 1616,
             acc: 286,
             microstep: 16,
-        };
-        Ok(t)
+        }
     }
 
     pub fn new(s: T) -> Result<Servo42C<T>, SerialError> {
-        let mut t = Servo42C::<T> {
-            address: 0xe0,
-            s,
-            kp: 1616,
-            ki: 288,
-            kd: 1616,
-            acc: 286,
-            microstep: 128,
-        };
+        let mut t = Servo42C::empty_new(s);
         t.stop()?;
         t.set_kp(t.kp)?;
         t.set_ki(t.ki)?;
@@ -51,30 +41,12 @@ impl<T: Serial> Servo42C<T> {
 
 #[derive(Debug)]
 pub enum MotorError {
-    SerialError,
+    SerialError(SerialError),
     Stuck,
 }
 
-
-
-
-/*
-impl<T: Serial> Motor<i64> for Servo42C<T>{
-    fn goto(&mut self, pos: i64, ) -> Result<(), ()> {
-        dt = obj - PrevPos;
-        if dt < 0 {
-            self.set_speed(false, speeed);
-        }else {
-            self.set_speed(true, speeed);
-        }
-        todo!()
+impl From<SerialError> for MotorError {
+    fn from(value: SerialError) -> Self {
+        MotorError::SerialError(value)
     }
-
-    fn get_info(&mut self) {
-        todo!()
-    }
-
-    fn update(&mut self, time_from_last: Duration) {
-        todo!()
-    }
-}*/
+}

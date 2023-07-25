@@ -3,9 +3,7 @@ use serial::serialtrait::SerialError;
 use crate::servo42::MotorError;
 use core::fmt::Debug;
 use core::time::Duration;
-pub trait Motor
-where
-    //Self: Sized,
+pub trait Motor //Self: Sized,
 {
     type PosUnit;
     type Info: Debug;
@@ -22,13 +20,9 @@ where
     fn set_zero(&mut self);
     //Generic Function for set max speed, acceleration...
     //fn new() -> Self::Builder;
-    
 }
 
-pub trait MotorBuilder
-where
-{
+pub trait MotorBuilder {
     type M: Motor;
     fn build(self) -> Result<Self::M, SerialError>;
 }
-

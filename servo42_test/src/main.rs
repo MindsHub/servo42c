@@ -152,7 +152,6 @@ impl eframe::App for MyEguiApp {
                                 .open()
                             {
                                 let mut m: Servo42C<Box<dyn SerialPort>> =
-
                                     Servo42C::<Box<dyn SerialPort>>::new(val).unwrap();
                                 let _ = m.read_encoder_value().unwrap();
                                 //m.goto(138, enc as u32);

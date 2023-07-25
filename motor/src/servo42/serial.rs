@@ -94,9 +94,9 @@ pub enum BaudRate {
     B115200,
 }
 
-impl Into<u32> for BaudRate{
+impl Into<u32> for BaudRate {
     fn into(self) -> u32 {
-        match self{
+        match self {
             BaudRate::B9600 => 9600,
             BaudRate::B19200 => 19200,
             BaudRate::B25000 => 25000,
@@ -118,9 +118,9 @@ impl<T: Serial> Servo42C<T> {
      */
     pub fn read_encoder_value(&mut self) -> Result<f64, SerialError> {
         //even if we read an int is easyer to manage an f64 (64 bit so we manage even big numbers losless)
-        //we retourn 
+        //we retourn
         let (rotations, phase): (i32, u16) = self.send_cmd(0x30, ())?;
-        let output: f64 = rotations as f64+(phase as f64)/65536.;
+        let output: f64 = rotations as f64 + (phase as f64) / 65536.;
         //let tot = ((rotations as i64).shl(16) + phase as i64)/182i64;
         Ok(output)
     }
@@ -128,8 +128,9 @@ impl<T: Serial> Servo42C<T> {
     /**
      Read the number of pulses received.
     */
-    pub fn read_recived_pulses(&mut self) -> Result<i32, SerialError> {
-        self.send_cmd(0x33, ())
+    pub fn read_recived_pulses(&mut self) -> Result<f64, SerialError> {
+        let val: i32 = self.send_cmd(0x33, ())?;
+        Ok(val as f64 / 200.)
     }
 
     /**recived_pulses
@@ -264,7 +265,7 @@ impl<T: Serial> Servo42C<T> {
     }
 
     /**
-     * Supports subdivision from 1 to 256.  
+     * Supports subdivision from 1 to 256.
     (Default: 16)
     Set microstep
     Note:the new micstep will show in the screen of MStep option.
@@ -274,7 +275,7 @@ impl<T: Serial> Servo42C<T> {
     pub fn set_microstep(&mut self, mstep: u8) -> Result<(), SerialError> {
         let ret: u8 = self.send_cmd(0x84, mstep)?;
         if ret == 1 {
-            self.microstep=mstep;
+            self.microstep = mstep;
             Ok(())
         } else {
             Err(SerialError::Undefined)
@@ -605,14 +606,14 @@ impl<T: Serial> Servo42C<T> {
     Vrpm = (Speed × 30000)/(Mstep × 400)(RPM)   (0.9 degree motor)
     Note: the Vrpm no great than 2000RPM.
      */
-    pub fn set_speed(&mut self,  speed: i8) -> Result<u8, SerialError> {
-        if speed as f32*30000./(self.microstep as f32*200.)>2000.{
-            return Err(SerialError::Undefined)
+    pub fn set_speed(&mut self, speed: i8) -> Result<u8, SerialError> {
+        if speed as f32 * 30000. / (self.microstep as f32 * 200.) > 2000. {
+            return Err(SerialError::Undefined);
         }
-        let to_send= if speed<0 {
-            -speed as u8 | 0x80
-        }else{
-            speed as u8
+        let to_send = if speed < 0 {
+            -speed as u8
+        } else {
+            speed as u8 | 0x80
         } as u8;
         let ret: u8 = self.send_cmd(0xF6, to_send)?;
         Ok(ret)
@@ -623,14 +624,9 @@ impl<T: Serial> Servo42C<T> {
     */
     pub fn stop(&mut self) -> Result<u8, SerialError> {
         self.send_cmd(0xF7, ())
-        
     }
     /**
-    Calibrate the encoder
-    （Same as the "Cal" option on screen）
-    - status =1  Calibrated success.
-    - status =2  Calibrating fail.
-    Note : The motor must be unloaded.
+    DO NOT USE THIS FUNCTION, IT'S BLOCKING!!
     */
     pub fn goto(&mut self, speed: u8, dist: u32) -> u8 {
         let ret: u8 = self.send_cmd(0xFD, (speed, dist)).unwrap();
@@ -650,7 +646,7 @@ mod tests {
         ($name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
             fn $name(){
-                let mut servo: Servo42C<SerialTest>=Servo42C::empty_new(SerialTest::default()).unwrap();
+                let mut servo: Servo42C<SerialTest>=Servo42C::empty_new(SerialTest::default());
                 servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
 
                 assert_eq!(servo.$name($($arg),*).unwrap(), $res);
@@ -659,7 +655,7 @@ mod tests {
     }
 
     test_motor!(read_encoder_value()->0.25, (0xe0 0x30 0x10)->(0xe0 00 00 00 00 0x40 00 0x20));
-    test_motor!(read_recived_pulses()->256, (0xe0 0x33 0x13)->(0xe0 00 00 0x01 00 0xe1));
+    test_motor!(read_recived_pulses()->1.28, (0xe0 0x33 0x13)->(0xe0 00 00 0x01 00 0xe1));
     test_motor!(read_error()->183, (0xe0 0x39 0x19)->(0xe0 00 0xB7 0x97));
     test_motor!(read_en_pin()->true, (0xe0 0x3a 0x1a)->(0xe0 0x01 0xe1));
     test_motor!(release_lock()->(), (0xe0 0x3d 0x1d)->(0xe0 0x01 0xe1));

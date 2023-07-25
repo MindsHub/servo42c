@@ -1,16 +1,17 @@
 use std::{
-    vec, sync::mpsc::{Receiver, Sender},
+    sync::mpsc::{Receiver, Sender},
+    vec,
 };
 
-use eframe::egui::{self};
-use motor_thread::{MotorState, MotorComand};
-use motor::servo42::serial::BaudRate;
-use serial::standard::serialport;
 use crate::motor_thread::new_thread;
+use eframe::egui::{self, plot::Points};
+use motor::servo42::serial::BaudRate;
+use motor_thread::{MotorComand, MotorState};
+use serial::standard::serialport;
 pub mod motor_thread;
 fn main() {
-    let mut native_options = eframe::NativeOptions::default();
-    native_options.vsync = false;
+    let native_options = eframe::NativeOptions::default();
+    //native_options.vsync = false;
     let _ = eframe::run_native(
         "",
         native_options,
@@ -26,6 +27,8 @@ struct MyEguiApp {
     pos_history: Vec<f64>,
     obj_history: Vec<f64>,
     time_history: Vec<f64>,
+    error_history: Vec<f64>,
+    cmd_rate: f64,
 }
 
 impl MyEguiApp {
@@ -38,6 +41,8 @@ impl MyEguiApp {
             pos_history: vec![],
             obj_history: vec![],
             time_history: vec![],
+            error_history: vec![],
+            cmd_rate: 0.,
         }
     }
 }
@@ -60,51 +65,66 @@ macro_rules! cmd {
 }*/
 
 impl MyEguiApp {
-    fn plot(&self, ui: &mut egui::Ui) -> egui::Response {
+    fn plot(&self, ui: &mut egui::Ui) {
         use egui::plot::{Line, PlotPoints};
         let pos: PlotPoints = self
             .time_history
             .iter()
-            .zip(self.pos_history.clone())
-            .map(|(x, y)| {
-                [*x, y]
-            })
+            .zip(self.pos_history.iter())
+            .map(|(x, y)| [*x, *y])
             .collect();
         let obj: PlotPoints = self
             .time_history
             .iter()
-            .zip(self.obj_history.clone())
-            .map(|(x, y)| {
-                [*x , y]
-            })
+            .zip(self.obj_history.iter())
+            .map(|(x, y)| [*x, *y])
             .collect();
-        let encoder = Line::new(pos);
-        let errors = Line::new(obj);
+        let errors: PlotPoints = self
+            .time_history
+            .iter()
+            .zip(self.error_history.iter())
+            .map(|(x, y)| [*x, *y])
+            .collect();
+        let mut prev = 0.;
+        let mut different = 0;
+
+        for x in self.pos_history.iter() {
+            if prev != *x {
+                different += 1;
+            }
+            prev = *x;
+        }
+        ui.label(format!("{different}"));
+        let errors = Line::new(errors);
+        let pos = Line::new(pos);
+        let obj = Points::new(obj);
         egui::plot::Plot::new("example_plot")
             .height(200.0)
             //.data_aspect(cont as f32)
             .show(ui, |plot_ui| {
-                plot_ui.line(encoder);
+                plot_ui.line(pos);
+                plot_ui.points(obj);
                 plot_ui.line(errors);
             })
-            .response
+            .response;
+        ui.add(egui::Label::new(format!("cmd_speed={:?}", self.cmd_rate)));
     }
 
     ///Function for display all connection settings
-    fn connection_settings(&mut self, ui: &mut egui::Ui){
+    fn connection_settings(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             egui::ComboBox::from_id_source(0)
                 .selected_text(&self.name)
-                .show_ui(ui, |ui|{
+                .show_ui(ui, |ui| {
                     let ports = serialport::available_ports().expect("No ports found!");
-                    for x in ports{
+                    for x in ports {
                         ui.selectable_value(&mut self.name, x.port_name.clone(), &x.port_name);
                     }
                 });
 
             egui::ComboBox::from_id_source(1)
                 .selected_text(format!("{:?}", self.baudrate))
-                .show_ui(ui, |ui|{
+                .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.baudrate, BaudRate::B9600, "9600");
                     ui.selectable_value(&mut self.baudrate, BaudRate::B19200, "19200");
                     ui.selectable_value(&mut self.baudrate, BaudRate::B25000, "25000");
@@ -112,39 +132,40 @@ impl MyEguiApp {
                     ui.selectable_value(&mut self.baudrate, BaudRate::B57600, "57600");
                     ui.selectable_value(&mut self.baudrate, BaudRate::B115200, "115200");
                 });
-                
+
             if ui
-                .add(egui::Checkbox::new(&mut self.connection_checkbox, "Connect"))
+                .add(egui::Checkbox::new(
+                    &mut self.connection_checkbox,
+                    "Connect",
+                ))
                 .changed()
             {
-                
                 if self.connection_checkbox {
                     //if want to connect
                     println!("connecting");
-                    match new_thread(&self.name, self.baudrate.clone().into()){
+                    match new_thread(&self.name, self.baudrate.clone().into()) {
                         Ok(conn) => {
-                            self.connection=Some(conn);
-                            self.connection_checkbox=true;
-                            self.obj_history=Vec::new();
-                            self.pos_history=Vec::new();
-                            self.time_history=Vec::new();
-                        },
+                            self.connection = Some(conn);
+                            self.connection_checkbox = true;
+                            self.obj_history = Vec::new();
+                            self.pos_history = Vec::new();
+                            self.time_history = Vec::new();
+                            self.error_history = Vec::new();
+                        }
                         Err(err) => {
                             println!("impossible to connect: {:?}", err);
-                            self.connection_checkbox=false;
-                            self.connection=None;
-                        },
+                            self.connection_checkbox = false;
+                            self.connection = None;
+                        }
                     }
-
                 } else {
                     println!("disconnecting");
                     //if want to disconnect
-                    if let Some((_, conn)) = &self.connection{
+                    if let Some((_, conn)) = &self.connection {
                         let _ = conn.send(MotorComand::KillThread);
                     }
-                    self.connection_checkbox=false;
+                    self.connection_checkbox = false;
                     self.connection = None;
-                    
                 }
             }
         });
@@ -155,21 +176,20 @@ impl eframe::App for MyEguiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             //if we are connected
-            if let Some((reader, _)) = &self.connection{
+            if let Some((reader, _)) = &self.connection {
                 //load all available data
-                reader.try_iter().for_each(|val|{
+                reader.try_iter().for_each(|val| {
                     self.obj_history.push(val.obbiettivo);
                     self.pos_history.push(val.pos as f64);
+                    self.error_history.push(val.error as f64);
                     self.time_history.push(val.timing.as_secs_f64());
+                    self.cmd_rate = val.cmd_rate;
                 });
-
             }
             ui.vertical(|ui| {
                 self.connection_settings(ui);
                 self.plot(ui);
             });
-            
-            
         });
 
         ctx.request_repaint();
