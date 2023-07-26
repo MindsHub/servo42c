@@ -1,4 +1,3 @@
-
 use crate::{
     motortrait::{Motor, MotorBuilder},
     servo42::MotorError,

@@ -1,7 +1,7 @@
 use serial::serialtrait::{MySize, SerialError};
 use serial::serialtrait::{Sendable, Serial};
 
-use super::MotorError::{*, self};
+use super::MotorError::{self, *};
 use super::Servo42C;
 
 impl<T: Serial> Servo42C<T> {
