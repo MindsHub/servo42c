@@ -1,4 +1,3 @@
-use serial::serialtrait::SerialError;
 
 use crate::{
     motortrait::{Motor, MotorBuilder},
@@ -10,7 +9,7 @@ pub struct MotorTest {
     obbiettivo: f64,
     cur_speed: f64,
     pos: f64,
-    max_speed: f64,
+    _max_speed: f64,
     acc: f64,
 }
 
@@ -19,13 +18,7 @@ pub struct MotorTestBuilder {
     max_speed: f64,
     acc: f64,
 }
-fn abs(x: f64) -> f64 {
-    if x < 0. {
-        -x
-    } else {
-        x
-    }
-}
+
 // implementazione dell'interfaccia motore
 impl Motor for MotorTest {
     //che unità mi aspetto per la posizione
@@ -38,7 +31,7 @@ impl Motor for MotorTest {
     type Builder = MotorTestBuilder;
 
     //funzione per impostare l'obbiettivo
-    fn goto(&mut self, obj: Self::PosUnit) -> Result<(), ()> {
+    fn goto(&mut self, obj: Self::PosUnit) -> Result<(), MotorError> {
         self.obbiettivo = obj;
         Ok(())
     }
@@ -57,7 +50,7 @@ impl Motor for MotorTest {
         self.pos += self.cur_speed * time_from_last.as_secs_f64();
 
         //calcolo lo spazio di frenata s=V^2/2a
-        let d_stop: f64 = self.cur_speed * self.cur_speed / 2. / self.acc;
+        //let d_stop: f64 = self.cur_speed * self.cur_speed / 2. / self.acc;
         let distanza_rimanente = self.obbiettivo - self.pos;
 
         //direzione sbagliata
@@ -91,17 +84,17 @@ impl Motor for MotorTest {
 
 impl MotorBuilder for MotorTestBuilder {
     type M = MotorTest;
-    fn build(self) -> Result<MotorTest, SerialError> {
+    fn build(self) -> Result<MotorTest, MotorError> {
         Ok(MotorTest {
             obbiettivo: 0.0,
             cur_speed: 0.0,
             pos: 0.0,
-            max_speed: self.max_speed,
+            _max_speed: self.max_speed,
             acc: self.acc,
         })
     }
 }
-
+#[allow(clippy::new_without_default)]
 impl MotorTestBuilder {
     pub fn set_max_speed(mut self, max_speed: f64) -> Self {
         self.max_speed = max_speed;

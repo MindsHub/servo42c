@@ -1,5 +1,3 @@
-use serial::serialtrait::SerialError;
-
 use crate::servo42::MotorError;
 use core::fmt::Debug;
 use core::time::Duration;
@@ -9,7 +7,7 @@ pub trait Motor //Self: Sized,
     type Info: Debug;
     type Builder: MotorBuilder;
     ///set a new objective
-    fn goto(&mut self, pos: Self::PosUnit) -> Result<(), ()>;
+    fn goto(&mut self, pos: Self::PosUnit) -> Result<(), MotorError>;
     ///get printable info
     fn get_info(&mut self) -> Self::Info;
     ///function to call for an update
@@ -24,5 +22,5 @@ pub trait Motor //Self: Sized,
 
 pub trait MotorBuilder {
     type M: Motor;
-    fn build(self) -> Result<Self::M, SerialError>;
+    fn build(self) -> Result<Self::M, MotorError>;
 }

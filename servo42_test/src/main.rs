@@ -7,11 +7,9 @@ use eframe::egui::{self};
 use motor::servo42::Servo42C;
 use serial::standard::{serialport, serialport::*};
 fn main() {
-    let mut native_options = eframe::NativeOptions::default();
-    native_options.vsync = false;
     let _ = eframe::run_native(
         "My egui App",
-        native_options,
+        eframe::NativeOptions::default(),
         Box::new(|cc| Box::new(MyEguiApp::new(cc))),
     );
 }
@@ -103,8 +101,8 @@ impl MyEguiApp {
             .encoder
             .iter()
             .map(|(x, y)| {
-                cont = cont + 1;
-                let y = (*y as f64) / 65536.0;
+                cont += 1;
+                let y = *y / 65536.0;
                 [*x as f64, y]
             })
             .collect();
@@ -112,7 +110,7 @@ impl MyEguiApp {
             .errors
             .iter()
             .map(|(x, y)| {
-                cont = cont + 1;
+                cont += 1;
                 //let y = (*y as f64);
                 [*x as f64, (*y as f64) / 3000.0]
             })

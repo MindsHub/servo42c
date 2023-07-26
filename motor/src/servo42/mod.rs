@@ -27,7 +27,7 @@ impl<T: Serial> Servo42C<T> {
         }
     }
 
-    pub fn new(s: T) -> Result<Servo42C<T>, SerialError> {
+    pub fn new(s: T) -> Result<Servo42C<T>, MotorError> {
         let mut t = Servo42C::empty_new(s);
         t.stop()?;
         t.set_kp(t.kp)?;
@@ -43,6 +43,7 @@ impl<T: Serial> Servo42C<T> {
 pub enum MotorError {
     SerialError(SerialError),
     Stuck,
+    NegativeResponse,
 }
 
 impl From<SerialError> for MotorError {

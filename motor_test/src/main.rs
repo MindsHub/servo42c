@@ -105,8 +105,7 @@ impl MyEguiApp {
                 plot_ui.line(pos);
                 plot_ui.points(obj);
                 plot_ui.line(errors);
-            })
-            .response;
+            });
         ui.add(egui::Label::new(format!("cmd_speed={:?}", self.cmd_rate)));
     }
 
@@ -180,8 +179,8 @@ impl eframe::App for MyEguiApp {
                 //load all available data
                 reader.try_iter().for_each(|val| {
                     self.obj_history.push(val.obbiettivo);
-                    self.pos_history.push(val.pos as f64);
-                    self.error_history.push(val.error as f64);
+                    self.pos_history.push(val.pos);
+                    self.error_history.push(val.error);
                     self.time_history.push(val.timing.as_secs_f64());
                     self.cmd_rate = val.cmd_rate;
                 });

@@ -43,7 +43,7 @@ pub fn new_thread(
         let mut state = false;
         let start = SystemTime::now();
         let mut cmd_sent = 0.;
-        let mut elapsed = Duration::from_secs(0);
+        let mut elapsed;
         loop {
             //if received a valid comand
             if let Ok(cmd) = cmd_receiver.try_recv() {
@@ -56,11 +56,11 @@ pub fn new_thread(
             }
 
             //change obj
-            if update_obj_timer.elapsed().unwrap() > Duration::from_secs(10) {
+            if update_obj_timer.elapsed().unwrap() > Duration::from_secs(30) {
                 update_obj_timer = SystemTime::now();
                 state = !state;
                 if state {
-                    let _ = m.goto(1.);
+                    let _ = m.goto(60.);
                 } else {
                     let _ = m.goto(0.);
                 }

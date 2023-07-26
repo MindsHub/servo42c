@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use serial::serialtrait::{Serial, SerialError};
+use serial::serialtrait::Serial;
 
 use super::{Motor, MotorBuilder};
 
@@ -25,7 +25,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
     type Info = MotorError;
     type Builder = Servo42LinearAccBuilder<T>;
 
-    fn goto(&mut self, pos: Self::PosUnit) -> Result<(), ()> {
+    fn goto(&mut self, pos: Self::PosUnit) -> Result<(), MotorError> {
         self.obbiettivo = pos;
         //self.m.goto(10, 1000);
         //let _ =self.m.set_speed(10);
@@ -37,7 +37,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
 
         //calcolo lo spazio di frenata s=V^2/2a
         let d_stop: f64 = self.cur_speed * self.cur_speed / 2. / self.acc;
-        let distanza_rimanente = self.obbiettivo - self.pos as f64;
+        let distanza_rimanente = self.obbiettivo - self.pos;
         let speed_dif = self.acc * time_from_last.as_secs_f64();
 
         let change_speed = |speed: &mut f64, quantity: f64| {
@@ -77,6 +77,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
             self.cur_speed = -self.max_speed;
         }
         let to_set = 200. * self.m.microstep as f64 / 500. * self.cur_speed;
+        //change_speed(&mut to_set, 1.0);
         let _ = self.m.set_speed(to_set as i8);
 
         Ok(())
@@ -98,7 +99,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
 impl<T: Serial> MotorBuilder for Servo42LinearAccBuilder<T> {
     type M = Servo42LinearAcc<T>;
 
-    fn build(self) -> Result<Self::M, SerialError> {
+    fn build(self) -> Result<Self::M, MotorError> {
         Ok(Self::M {
             m: Servo42C::new(self.s)?,
             obbiettivo: 0.,
@@ -113,9 +114,9 @@ impl<T: Serial> MotorBuilder for Servo42LinearAccBuilder<T> {
 impl<T: Serial> Servo42LinearAccBuilder<T> {
     pub fn new(s: T) -> Servo42LinearAccBuilder<T> {
         Servo42LinearAccBuilder {
-            s: s,
-            max_speed: 1.,
-            acc: 0.25,
+            s,
+            max_speed: 15.,
+            acc: 10.,
         }
     }
 }
