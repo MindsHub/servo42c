@@ -15,9 +15,9 @@ pub struct Servo42LinearAcc<T: Serial> {
     pub acc: f64,
 }
 pub struct Servo42LinearAccBuilder<T: Serial> {
-    s: T,
-    max_speed: f64,
-    acc: f64,
+    pub s: T,
+    pub max_speed: f64,
+    pub acc: f64,
 }
 
 impl<T: Serial> Motor for Servo42LinearAcc<T> {

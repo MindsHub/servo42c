@@ -5,9 +5,9 @@ use std::{
 
 use crate::motor_thread::new_thread;
 use eframe::egui::{self, plot::Points};
-use motor::servo42::serial::BaudRate;
-use motor_thread::{MotorComand, MotorState};
-use serial::standard::serialport;
+use motor::servo42::{serial::BaudRate, linear_acc::Servo42LinearAccBuilder};
+use motor_thread::{MotorComand, MotorState, EmptySerial};
+use serial::standard::{serialport, SerialPort};
 pub mod motor_thread;
 fn main() {
     let native_options = eframe::NativeOptions::default();
@@ -29,13 +29,14 @@ struct MyEguiApp {
     time_history: Vec<f64>,
     error_history: Vec<f64>,
     cmd_rate: f64,
+    motor_builder: Servo42LinearAccBuilder<Box<dyn SerialPort>>,
 }
 
 impl MyEguiApp {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         MyEguiApp {
             name: "/dev/ttyACM0".to_string(),
-            baudrate: BaudRate::B38400,
+            baudrate: BaudRate::B115200,
             connection: None,
             connection_checkbox: false,
             pos_history: vec![],
@@ -43,6 +44,7 @@ impl MyEguiApp {
             time_history: vec![],
             error_history: vec![],
             cmd_rate: 0.,
+            motor_builder: Servo42LinearAccBuilder::new(Box::new(EmptySerial{})),
         }
     }
 }
@@ -63,6 +65,15 @@ macro_rules! cmd {
         }
     };
 }*/
+
+macro_rules! build_parameters {
+    ($ui:ident, $self:ident, $name:ident) => {
+        $ui.horizontal(|ui| {
+            ui.heading(stringify!($name));
+            ui.add(egui::Slider::new(&mut $self.motor_builder.$name, 0.0..=25.0));
+        })
+    };
+}
 
 impl MyEguiApp {
     fn plot(&self, ui: &mut egui::Ui) {
@@ -142,7 +153,7 @@ impl MyEguiApp {
                 if self.connection_checkbox {
                     //if want to connect
                     println!("connecting");
-                    match new_thread(&self.name, self.baudrate.clone().into()) {
+                    match new_thread(&self.name.to_string(), self.baudrate.clone().into(), &mut self.motor_builder) {
                         Ok(conn) => {
                             self.connection = Some(conn);
                             self.connection_checkbox = true;
@@ -187,6 +198,8 @@ impl eframe::App for MyEguiApp {
             }
             ui.vertical(|ui| {
                 self.connection_settings(ui);
+                build_parameters!(ui, self , acc);
+                build_parameters!(ui, self , max_speed);
                 self.plot(ui);
             });
         });
