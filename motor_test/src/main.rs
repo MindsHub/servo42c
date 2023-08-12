@@ -5,8 +5,8 @@ use std::{
 
 use crate::motor_thread::new_thread;
 use eframe::egui::{self, plot::Points};
-use motor::servo42::{serial::BaudRate, linear_acc::Servo42LinearAccBuilder};
-use motor_thread::{MotorComand, MotorState, EmptySerial};
+use motor::servo42::{linear_acc::Servo42LinearAccBuilder, serial::BaudRate};
+use motor_thread::{EmptySerial, MotorComand, MotorState};
 use serial::standard::{serialport, SerialPort};
 pub mod motor_thread;
 fn main() {
@@ -44,7 +44,7 @@ impl MyEguiApp {
             time_history: vec![],
             error_history: vec![],
             cmd_rate: 0.,
-            motor_builder: Servo42LinearAccBuilder::new(Box::new(EmptySerial{})),
+            motor_builder: Servo42LinearAccBuilder::new(Box::new(EmptySerial {})),
         }
     }
 }
@@ -70,7 +70,10 @@ macro_rules! build_parameters {
     ($ui:ident, $self:ident, $name:ident) => {
         $ui.horizontal(|ui| {
             ui.heading(stringify!($name));
-            ui.add(egui::Slider::new(&mut $self.motor_builder.$name, 0.0..=25.0));
+            ui.add(egui::Slider::new(
+                &mut $self.motor_builder.$name,
+                0.0..=32.0,
+            ));
         })
     };
 }
@@ -153,7 +156,11 @@ impl MyEguiApp {
                 if self.connection_checkbox {
                     //if want to connect
                     println!("connecting");
-                    match new_thread(&self.name.to_string(), self.baudrate.clone().into(), &mut self.motor_builder) {
+                    match new_thread(
+                        &self.name.to_string(),
+                        self.baudrate.clone().into(),
+                        &self.motor_builder,
+                    ) {
                         Ok(conn) => {
                             self.connection = Some(conn);
                             self.connection_checkbox = true;
@@ -198,8 +205,8 @@ impl eframe::App for MyEguiApp {
             }
             ui.vertical(|ui| {
                 self.connection_settings(ui);
-                build_parameters!(ui, self , acc);
-                build_parameters!(ui, self , max_speed);
+                build_parameters!(ui, self, acc);
+                build_parameters!(ui, self, max_speed);
                 self.plot(ui);
             });
         });

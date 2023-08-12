@@ -24,7 +24,7 @@ pub enum MotorComand {
 pub fn new_thread(
     name: &str,
     baudrate: u32,
-    builder: &mut Servo42LinearAccBuilder<Box<dyn SerialPort>>,
+    builder: &Servo42LinearAccBuilder<Box<dyn SerialPort>>,
 ) -> Result<(Receiver<MotorState>, Sender<MotorComand>), Box<dyn std::error::Error>> {
     let (data_sender, data_receiver) = channel::<MotorState>();
     let (cmd_sender, cmd_receiver) = channel::<MotorComand>();
@@ -35,13 +35,11 @@ pub fn new_thread(
         .data_bits(DataBits::Eight)
         .flow_control(serial::standard::FlowControl::None)
         .open()?;
-    let mut cur_builder=Servo42LinearAccBuilder::new(s);
-    cur_builder.max_speed=builder.max_speed;
-    cur_builder.acc=builder.acc;
+    let mut cur_builder = Servo42LinearAccBuilder::new(s);
+    cur_builder.max_speed = builder.max_speed;
+    cur_builder.acc = builder.acc;
     //builder.s=s;
-    let mut m = cur_builder
-        .build()
-        .map_err(|_| "Impossibile comunicare!")?;
+    let mut m = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
     thread::spawn(move || {
         let mut time = SystemTime::now();
         let mut update_obj_timer = SystemTime::now() - Duration::from_secs(100);
@@ -61,10 +59,12 @@ pub fn new_thread(
             }
 
             //change obj
-            if update_obj_timer.elapsed().unwrap() > Duration::from_secs(30) {
+            if update_obj_timer.elapsed().unwrap() > Duration::from_secs(10) {
                 update_obj_timer = SystemTime::now();
                 state = !state;
+
                 if state {
+                    
                     let _ = m.goto(60.);
                 } else {
                     let _ = m.goto(0.);
@@ -77,7 +77,6 @@ pub fn new_thread(
 
             //update
             let _z = m.update(elapsed);
-            //println!("{} {}", m.cur_speed, elapsed.as_secs_f64()*m.acc);
             cmd_sent += 3.;
 
             let error = m.m.read_error().unwrap() as f64 / 65536.;
@@ -97,8 +96,8 @@ pub fn new_thread(
     Ok((data_receiver, cmd_sender))
 }
 
-pub struct EmptySerial{}
-impl std::io::Write for EmptySerial{
+pub struct EmptySerial {}
+impl std::io::Write for EmptySerial {
     fn write(&mut self, _buf: &[u8]) -> std::io::Result<usize> {
         todo!()
     }
@@ -107,12 +106,12 @@ impl std::io::Write for EmptySerial{
         todo!()
     }
 }
-impl std::io::Read for EmptySerial{
+impl std::io::Read for EmptySerial {
     fn read(&mut self, _buf: &mut [u8]) -> std::io::Result<usize> {
         todo!()
     }
 }
-impl SerialPort for EmptySerial{
+impl SerialPort for EmptySerial {
     fn name(&self) -> Option<String> {
         todo!()
     }
@@ -149,7 +148,10 @@ impl SerialPort for EmptySerial{
         todo!()
     }
 
-    fn set_flow_control(&mut self, _flow_control: serial::standard::FlowControl) -> serial::standard::Result<()> {
+    fn set_flow_control(
+        &mut self,
+        _flow_control: serial::standard::FlowControl,
+    ) -> serial::standard::Result<()> {
         todo!()
     }
 
@@ -157,7 +159,10 @@ impl SerialPort for EmptySerial{
         todo!()
     }
 
-    fn set_stop_bits(&mut self, _stop_bits: serial::standard::StopBits) -> serial::standard::Result<()> {
+    fn set_stop_bits(
+        &mut self,
+        _stop_bits: serial::standard::StopBits,
+    ) -> serial::standard::Result<()> {
         todo!()
     }
 
@@ -197,7 +202,10 @@ impl SerialPort for EmptySerial{
         todo!()
     }
 
-    fn clear(&self, _buffer_to_clear: serial::standard::ClearBuffer) -> serial::standard::Result<()> {
+    fn clear(
+        &self,
+        _buffer_to_clear: serial::standard::ClearBuffer,
+    ) -> serial::standard::Result<()> {
         todo!()
     }
 
