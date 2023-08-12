@@ -17,7 +17,7 @@ impl Serial for Box<dyn SerialPort + 'static> {
             #[cfg(feature = "debug")]
             println!("readen {buf:?} {readen}/{}", buf.len());
             if failed > 10 {
-                return Err(SerialError::Undefined);
+                return Err(SerialError::ConnectionBreak);
             }
             if readen >= buf.len() {
                 break;
@@ -27,7 +27,8 @@ impl Serial for Box<dyn SerialPort + 'static> {
     }
 
     fn write(&mut self, buf: &[u8]) -> std::result::Result<(), SerialError> {
-        self.write_all(buf).map_err(|_| SerialError::Interrupted)?;
+        self.write_all(buf)
+            .map_err(|_| SerialError::ConnectionBreak)?;
         #[cfg(feature = "debug")]
         println!("written {buf:?}");
         Ok(())

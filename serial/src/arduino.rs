@@ -14,8 +14,8 @@ where
             } else {
                 failed += 1;
             }
-            if failed > 65534 {
-                return Err(SerialError::Undefined);
+            if failed > 30 {
+                return Err(SerialError::ConnectionBreak);
             }
             if readen >= buf.len() {
                 break;

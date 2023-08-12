@@ -3,7 +3,6 @@ use core::mem;
 pub enum SerialError {
     Undefined,
     ConnectionBreak,
-    Interrupted,
 }
 
 pub trait Serial {

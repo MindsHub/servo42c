@@ -554,6 +554,7 @@ impl<T: Serial> Servo42C<T> {
 
     /**
     Set the acceleration (ACC) parameter
+    for unknown reasons it resets the position on the motor...
     */
     pub fn set_acc(&mut self, acc: u16) -> Result<(), MotorError> {
         self.acc = acc;

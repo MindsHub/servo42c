@@ -6,11 +6,33 @@ use super::{Motor, MotorBuilder};
 
 use super::{MotorError, Servo42C};
 
+///Helper function
+fn change_speed(speed: &mut f64, quantity: f64) {
+    if *speed > 0. {
+        *speed += quantity;
+    } else {
+        *speed -= quantity;
+    }
+}
+
+fn abs(val: f64) -> f64 {
+    if val > 0. {
+        val
+    } else {
+        -val
+    }
+}
+
 pub struct Servo42LinearAcc<T: Serial> {
+    //motore incapsulato
     pub m: Servo42C<T>,
+
+    //dati aggiuntivi
     pub obbiettivo: f64,
     pub cur_speed: f64,
     pub pos: f64,
+
+    //configurazione
     pub max_speed: f64,
     pub acc: f64,
 }
@@ -27,8 +49,6 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
 
     fn goto(&mut self, pos: Self::PosUnit) -> Result<(), MotorError> {
         self.obbiettivo = pos;
-        //self.m.goto(10, 1000);
-        //let _ =self.m.set_speed(10);
         Ok(())
     }
 
@@ -36,32 +56,30 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
         self.pos = self.m.read_recived_pulses().unwrap() / self.m.microstep as f64;
 
         //calcolo lo spazio di frenata s=V^2/2a
-        let d_stop: f64 = self.cur_speed * self.cur_speed / 2. / self.acc;
+        //let d_stop: f64 = self.cur_speed * self.cur_speed / 2. / self.acc;
         let distanza_rimanente = self.obbiettivo - self.pos;
+        //let max_speed=
         let speed_dif = self.acc * time_from_last.as_secs_f64();
 
-        let change_speed = |speed: &mut f64, quantity: f64| {
-            if *speed > 0. {
-                *speed += quantity;
-            } else {
-                *speed -= quantity;
-            }
-        };
-        let abs = |val: f64| {
-            if val > 0. {
-                val
-            } else {
-                -val
-            }
-        };
 
+        /*if abs(distanza_rimanente)<0.05 && abs(self.cur_speed)<0.1{
+            let _ = self.m.stop();
+            return Ok(());
+        }
         if distanza_rimanente * self.cur_speed >= 0. {
-            //change_speed(&mut self.cur_speed, speed_dif);
-
             //se vado nella direzione corretta
             if abs(distanza_rimanente) > d_stop {
                 //e ho spazio accelero
-                change_speed(&mut self.cur_speed, speed_dif);
+                let mut next_speed= self.cur_speed;
+                change_speed(&mut next_speed, speed_dif);
+                let d_stop: f64 = next_speed * next_speed / 2. / self.acc;
+                if abs(d_stop)<abs(distanza_rimanente-next_speed*time_from_last.as_secs_f64()){
+                    self.cur_speed=next_speed;
+                }else{
+                    println!("wtf");
+                }
+                
+                
             } else {
                 //se non ho spazio rallento
                 change_speed(&mut self.cur_speed, -speed_dif);
@@ -78,7 +96,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
         }
         let to_set = 200. * self.m.microstep as f64 / 500. * self.cur_speed;
         //change_speed(&mut to_set, 1.0);
-        let _ = self.m.set_speed(to_set as i8);
+        let _ = self.m.set_speed(to_set as i8);*/
 
         Ok(())
     }

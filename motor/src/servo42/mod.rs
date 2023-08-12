@@ -35,6 +35,7 @@ impl<T: Serial> Servo42C<T> {
         t.set_kd(t.kd)?;
         t.set_acc(t.acc)?;
         t.set_microstep(t.microstep)?;
+        t.set_maxt(Some(1600))?;
         Ok(t)
     }
 }
