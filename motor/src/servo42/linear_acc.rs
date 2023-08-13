@@ -5,15 +5,29 @@ use serial::serialtrait::Serial;
 use super::{Motor, MotorBuilder};
 
 use super::{MotorError, Servo42C};
-
+use libm;
 ///Helper function
-fn change_speed(speed: &mut f64, quantity: f64) {
-    if *speed > 0. {
-        *speed += quantity;
-    } else {
-        *speed -= quantity;
+impl<T: Serial> Servo42LinearAcc<T>{
+    fn change_speed(&mut self, quantity: f64) {
+        if self.cur_speed > 0. {
+            self.cur_speed += quantity;
+        } else {
+            self.cur_speed -= quantity;
+        }
+        self.normalize_speed(self.max_speed);
+    }
+    fn normalize_speed(&mut self,  quantity: f64){
+        if self.cur_speed > quantity {
+            self.cur_speed = quantity;
+            return;
+        }
+        if self.cur_speed < -quantity {
+            self.cur_speed = -quantity;
+            return;
+        }
     }
 }
+
 
 fn abs(val: f64) -> f64 {
     if val > 0. {
@@ -52,7 +66,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
         Ok(())
     }
 
-    fn update(&mut self, time_from_last: Duration) -> Result<(), MotorError> {
+    /*fn update(&mut self, time_from_last: Duration) -> Result<(), MotorError> {
         self.pos = self.m.read_recived_pulses().unwrap() / self.m.microstep as f64;
 
         //calcolo lo spazio di frenata s=V^2/2a
@@ -98,6 +112,39 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
         //change_speed(&mut to_set, 1.0);
         let _ = self.m.set_speed(to_set as i8);*/
 
+        Ok(())
+    }*/
+    fn update(&mut self, time_from_last: Duration) -> Result<(), MotorError> {
+        self.pos = self.m.read_recived_pulses().unwrap() / self.m.microstep as f64;
+        let distanza_rimanente = self.obbiettivo - self.pos;
+        
+        let speed_dif = self.acc * time_from_last.as_secs_f64();
+        if distanza_rimanente * self.cur_speed <= 0. {
+            //direzione sbagliata:
+            //rallenta
+            self.change_speed( -speed_dif);
+        }else{
+            //direzione giusta:
+            let max_speed=libm::sqrt(abs(distanza_rimanente)*self.acc+self.cur_speed*self.cur_speed/2.);
+            let d_to_max = distanza_rimanente/2.-self.cur_speed*self.cur_speed/4.0*self.acc;
+            
+            
+            //let t=(max_speed-self.cur_speed)/self.acc;
+            if d_to_max>0.{
+                //accelero
+                self.change_speed(speed_dif);
+                self.normalize_speed(max_speed);
+                self.normalize_speed(d_to_max/time_from_last.as_secs_f64());
+                
+            }else{
+                //decelero
+                self.change_speed(speed_dif);
+            }
+        }
+        
+        let to_set = 200. * self.m.microstep as f64 / 500. * self.cur_speed;
+        let _ = self.m.set_speed(to_set as i8);
+        
         Ok(())
     }
 
