@@ -121,7 +121,7 @@ impl<T: Serial> Servo42C<T> {
         //even if we read an int is easyer to manage an f64 (64 bit so we manage even big numbers losless)
         //we retourn
         let (rotations, phase): (i32, u16) = self.send_cmd(0x30, ())?;
-        let output: f64 = rotations as f64+ (phase as f64) / 65536.;
+        let output: f64 = rotations as f64 + (phase as f64) / 65536.;
         //let tot = ((rotations as i64).shl(16) + phase as i64)/182i64;
         Ok(output)
     }
@@ -143,8 +143,8 @@ impl<T: Serial> Servo42C<T> {
     65536/360= 182.444, and so on.
     */
     pub fn read_error(&mut self) -> Result<f64, MotorError> {
-        let err: i16=self.send_cmd(0x39, ())?;
-        Ok(err as f64 /65536.)
+        let err: i16 = self.send_cmd(0x39, ())?;
+        Ok(err as f64 / 65536.)
     }
 
     /**

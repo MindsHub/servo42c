@@ -41,7 +41,7 @@ pub fn new_thread(
     cur_builder.acc = builder.acc;
     //builder.s=s;
     let mut m = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
-    let zero=m.m.read_encoder_value().unwrap();
+    let zero = m.m.read_encoder_value().unwrap();
     thread::spawn(move || {
         let mut time = SystemTime::now();
         let mut update_obj_timer = SystemTime::now() - Duration::from_secs(100);
@@ -66,7 +66,6 @@ pub fn new_thread(
                 state = !state;
 
                 if state {
-                    
                     let _ = m.goto(60.);
                 } else {
                     let _ = m.goto(0.);
@@ -82,8 +81,11 @@ pub fn new_thread(
             cmd_sent += 3.;
 
             //let error = (m.pos-m.obbiettivo)*360.;
-            let error=m.m.read_error().unwrap() as f64;
-            println!("{}            {error}", (error+m.obbiettivo-m.pos)*360.);
+            let error = m.m.read_error().unwrap() as f64;
+            println!(
+                "{}            {error}",
+                (error + m.obbiettivo - m.pos) * 360.
+            );
             //let error=m.m.read_encoder_value().unwrap()-zero;
             //println!("{error}");
             //send data
@@ -92,8 +94,8 @@ pub fn new_thread(
                 obbiettivo: m.obbiettivo,
                 timing: start.elapsed().unwrap(),
                 cmd_rate: cmd_sent / start.elapsed().unwrap().as_secs_f64(),
-                error: error*200.,
-                reached: z==UpdateStatus::GetThere,
+                error: error * 200.,
+                reached: z == UpdateStatus::GetThere,
             };
             data_sender.send(to_send).unwrap(); //if can't sent it's ok to crash
         }

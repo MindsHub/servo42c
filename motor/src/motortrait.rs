@@ -3,7 +3,7 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 #[derive(PartialEq, Eq)]
-pub enum UpdateStatus{
+pub enum UpdateStatus {
     Working,
     GetThere,
 }
@@ -30,4 +30,3 @@ pub trait MotorBuilder {
     type M: Motor;
     fn build(self) -> Result<Self::M, MotorError>;
 }
-

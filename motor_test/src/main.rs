@@ -203,14 +203,10 @@ impl eframe::App for MyEguiApp {
                     self.error_history.push(val.error);
                     self.time_history.push(val.timing.as_secs_f64());
                     self.cmd_rate = val.cmd_rate;
-                    self.arrivato=val.reached;
+                    self.arrivato = val.reached;
                 });
             }
-            ui
-                .add(egui::Checkbox::new(
-                    &mut self.arrivato,
-                    "Arrivato",
-                ));
+            ui.add(egui::Checkbox::new(&mut self.arrivato, "Arrivato"));
             ui.vertical(|ui| {
                 self.connection_settings(ui);
                 build_parameters!(ui, self, acc);
@@ -218,7 +214,6 @@ impl eframe::App for MyEguiApp {
                 build_parameters!(ui, self, max_err);
                 build_parameters!(ui, self, precision);
                 self.plot(ui);
-
             });
         });
 

@@ -9,7 +9,7 @@ use crate::{
 
 use libm;
 ///Helper function
-impl MotorTest{
+impl MotorTest {
     fn change_speed(&mut self, quantity: f64) {
         if self.cur_speed > 0. {
             self.cur_speed += quantity;
@@ -18,7 +18,7 @@ impl MotorTest{
         }
         self.normalize_speed(self.max_speed);
     }
-    fn normalize_speed(&mut self,  quantity: f64){
+    fn normalize_speed(&mut self, quantity: f64) {
         if self.cur_speed > quantity {
             self.cur_speed = quantity;
             return;
@@ -28,7 +28,6 @@ impl MotorTest{
         }
     }
 }
-
 
 fn abs(val: f64) -> f64 {
     if val > 0. {
@@ -63,26 +62,29 @@ impl Motor for MotorTest {
         Ok(())
     }
     fn update(&mut self, time_from_last: Duration) -> Result<UpdateStatus, MotorError> {
-        self.pos += libm::round(self.cur_speed/self.max_speed*127.)*self.max_speed/127.*time_from_last.as_secs_f64();
+        self.pos += libm::round(self.cur_speed / self.max_speed * 127.) * self.max_speed / 127.
+            * time_from_last.as_secs_f64();
         let speed_dif = self.acc * time_from_last.as_secs_f64();
-        let distanza_rimanente = self.obbiettivo - self.pos-self.cur_speed*time_from_last.as_secs_f64();
-        
-        
+        let distanza_rimanente =
+            self.obbiettivo - self.pos - self.cur_speed * time_from_last.as_secs_f64();
+
         if distanza_rimanente * self.cur_speed <= 0. {
             //direzione sbagliata:
             //rallenta
-            self.change_speed( -speed_dif);
-        }else{
+            self.change_speed(-speed_dif);
+        } else {
             //direzione giusta:
-            let max_speed=libm::sqrt(abs(distanza_rimanente)*self.acc+self.cur_speed*self.cur_speed/2.);
-            let d_to_max = abs(distanza_rimanente)/2.-self.cur_speed*self.cur_speed/(4.0*self.acc);
-            if d_to_max>0.{
+            let max_speed = libm::sqrt(
+                abs(distanza_rimanente) * self.acc + self.cur_speed * self.cur_speed / 2.,
+            );
+            let d_to_max =
+                abs(distanza_rimanente) / 2. - self.cur_speed * self.cur_speed / (4.0 * self.acc);
+            if d_to_max > 0. {
                 //accelero
                 self.change_speed(speed_dif);
                 self.normalize_speed(max_speed);
                 //self.normalize_speed(abs(d_to_max)/time_from_last.as_secs_f64());
-                
-            }else{
+            } else {
                 //decelero
                 self.change_speed(-speed_dif);
             }
@@ -117,8 +119,8 @@ impl MotorBuilder for MotorTestBuilder {
     }
 }
 
-impl MotorTestBuilder{
-    pub fn new() -> MotorTestBuilder{
+impl MotorTestBuilder {
+    pub fn new() -> MotorTestBuilder {
         MotorTestBuilder {
             max_speed: 15.,
             acc: 10.,
