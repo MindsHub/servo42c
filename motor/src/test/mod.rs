@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use crate::{
-    motortrait::{Motor, MotorBuilder},
+    motortrait::{Motor, MotorBuilder, UpdateStatus},
     servo42::MotorError,
 };
 
@@ -25,7 +25,6 @@ impl MotorTest{
         }
         if self.cur_speed < -quantity {
             self.cur_speed = -quantity;
-            return;
         }
     }
 }
@@ -63,11 +62,12 @@ impl Motor for MotorTest {
         self.obbiettivo = pos;
         Ok(())
     }
-    fn update(&mut self, time_from_last: Duration) -> Result<(), MotorError> {
-        self.pos += self.cur_speed*time_from_last.as_secs_f64();
-        let distanza_rimanente = self.obbiettivo - self.pos;
-        
+    fn update(&mut self, time_from_last: Duration) -> Result<UpdateStatus, MotorError> {
+        self.pos += libm::round(self.cur_speed/self.max_speed*127.)*self.max_speed/127.*time_from_last.as_secs_f64();
         let speed_dif = self.acc * time_from_last.as_secs_f64();
+        let distanza_rimanente = self.obbiettivo - self.pos-self.cur_speed*time_from_last.as_secs_f64();
+        
+        
         if distanza_rimanente * self.cur_speed <= 0. {
             //direzione sbagliata:
             //rallenta
@@ -75,23 +75,19 @@ impl Motor for MotorTest {
         }else{
             //direzione giusta:
             let max_speed=libm::sqrt(abs(distanza_rimanente)*self.acc+self.cur_speed*self.cur_speed/2.);
-            let d_to_max = distanza_rimanente/2.-self.cur_speed*self.cur_speed/4.0*self.acc;
-            
-            
-            //let t=(max_speed-self.cur_speed)/self.acc;
+            let d_to_max = abs(distanza_rimanente)/2.-self.cur_speed*self.cur_speed/(4.0*self.acc);
             if d_to_max>0.{
                 //accelero
                 self.change_speed(speed_dif);
                 self.normalize_speed(max_speed);
-                self.normalize_speed(d_to_max/time_from_last.as_secs_f64());
+                //self.normalize_speed(abs(d_to_max)/time_from_last.as_secs_f64());
                 
             }else{
                 //decelero
-                self.change_speed(speed_dif);
+                self.change_speed(-speed_dif);
             }
         }
-        
-        Ok(())
+        Ok(UpdateStatus::GetThere)
     }
 
     fn reset(&mut self) {

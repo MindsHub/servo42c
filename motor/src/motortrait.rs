@@ -1,6 +1,12 @@
 use crate::servo42::MotorError;
 use core::fmt::Debug;
 use core::time::Duration;
+
+#[derive(PartialEq, Eq)]
+pub enum UpdateStatus{
+    Working,
+    GetThere,
+}
 pub trait Motor //Self: Sized,
 {
     type PosUnit;
@@ -11,7 +17,7 @@ pub trait Motor //Self: Sized,
     ///get printable info
     fn get_info(&mut self) -> Self::Info;
     ///function to call for an update
-    fn update(&mut self, time_from_last: Duration) -> Result<(), MotorError>;
+    fn update(&mut self, time_from_last: Duration) -> Result<UpdateStatus, MotorError>;
     ///find zero, and set
     fn reset(&mut self);
     ///set zero here
@@ -24,3 +30,4 @@ pub trait MotorBuilder {
     type M: Motor;
     fn build(self) -> Result<Self::M, MotorError>;
 }
+

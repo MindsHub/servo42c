@@ -121,7 +121,7 @@ impl<T: Serial> Servo42C<T> {
         //even if we read an int is easyer to manage an f64 (64 bit so we manage even big numbers losless)
         //we retourn
         let (rotations, phase): (i32, u16) = self.send_cmd(0x30, ())?;
-        let output: f64 = rotations as f64 + (phase as f64) / 65536.;
+        let output: f64 = rotations as f64+ (phase as f64) / 65536.;
         //let tot = ((rotations as i64).shl(16) + phase as i64)/182i64;
         Ok(output)
     }
@@ -142,8 +142,9 @@ impl<T: Serial> Servo42C<T> {
     for  example,  when  the  angle  error  is  1°,  the  return  error  is
     65536/360= 182.444, and so on.
     */
-    pub fn read_error(&mut self) -> Result<i16, MotorError> {
-        self.send_cmd(0x39, ())
+    pub fn read_error(&mut self) -> Result<f64, MotorError> {
+        let err: i16=self.send_cmd(0x39, ())?;
+        Ok(err as f64 /65536.)
     }
 
     /**
@@ -658,7 +659,7 @@ mod tests {
 
     test_motor!(read_encoder_value()->0.25, (0xe0 0x30 0x10)->(0xe0 00 00 00 00 0x40 00 0x20));
     test_motor!(read_recived_pulses()->1.28, (0xe0 0x33 0x13)->(0xe0 00 00 0x01 00 0xe1));
-    test_motor!(read_error()->183, (0xe0 0x39 0x19)->(0xe0 00 0xB7 0x97));
+    test_motor!(read_error()->183./65536., (0xe0 0x39 0x19)->(0xe0 00 0xB7 0x97));
     test_motor!(read_en_pin()->true, (0xe0 0x3a 0x1a)->(0xe0 0x01 0xe1));
     test_motor!(release_lock()->(), (0xe0 0x3d 0x1d)->(0xe0 0x01 0xe1));
 

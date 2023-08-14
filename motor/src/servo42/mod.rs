@@ -19,10 +19,10 @@ impl<T: Serial> Servo42C<T> {
         Servo42C::<T> {
             address: 0xe0,
             s,
-            kp: 1616,
-            ki: 288,
-            kd: 1616,
-            acc: 286,
+            kp: 1616,//1616,
+            ki: 288,//288,
+            kd: 1616,//1616,
+            acc: 286,//286,
             microstep: 16,
         }
     }
@@ -35,7 +35,7 @@ impl<T: Serial> Servo42C<T> {
         t.set_kd(t.kd)?;
         t.set_acc(t.acc)?;
         t.set_microstep(t.microstep)?;
-        t.set_maxt(Some(1600))?;
+        t.set_maxt(Some(2000))?;
         Ok(t)
     }
 }
