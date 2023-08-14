@@ -30,6 +30,7 @@ struct MyEguiApp {
     error_history: Vec<f64>,
     cmd_rate: f64,
     motor_builder: Servo42LinearAccBuilder<Box<dyn SerialPort>>,
+    arrivato: bool,
 }
 
 impl MyEguiApp {
@@ -45,6 +46,7 @@ impl MyEguiApp {
             error_history: vec![],
             cmd_rate: 0.,
             motor_builder: Servo42LinearAccBuilder::new(Box::new(EmptySerial {})),
+            arrivato: false,
         }
     }
 }
@@ -201,13 +203,22 @@ impl eframe::App for MyEguiApp {
                     self.error_history.push(val.error);
                     self.time_history.push(val.timing.as_secs_f64());
                     self.cmd_rate = val.cmd_rate;
+                    self.arrivato=val.reached;
                 });
             }
+            ui
+                .add(egui::Checkbox::new(
+                    &mut self.arrivato,
+                    "Arrivato",
+                ));
             ui.vertical(|ui| {
                 self.connection_settings(ui);
                 build_parameters!(ui, self, acc);
                 build_parameters!(ui, self, max_speed);
+                build_parameters!(ui, self, max_err);
+                build_parameters!(ui, self, precision);
                 self.plot(ui);
+
             });
         });
 

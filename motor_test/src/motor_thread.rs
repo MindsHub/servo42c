@@ -5,7 +5,7 @@ use std::{
 };
 
 use motor::{
-    motortrait::{Motor, MotorBuilder},
+    motortrait::{Motor, MotorBuilder, UpdateStatus},
     servo42::linear_acc::Servo42LinearAccBuilder,
 };
 use serial::standard::{serialport, DataBits, Parity, SerialPort};
@@ -15,6 +15,7 @@ pub struct MotorState {
     pub error: f64,
     pub timing: Duration,
     pub cmd_rate: f64,
+    pub reached: bool,
 }
 
 pub enum MotorComand {
@@ -40,6 +41,7 @@ pub fn new_thread(
     cur_builder.acc = builder.acc;
     //builder.s=s;
     let mut m = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
+    let zero=m.m.read_encoder_value().unwrap();
     thread::spawn(move || {
         let mut time = SystemTime::now();
         let mut update_obj_timer = SystemTime::now() - Duration::from_secs(100);
@@ -76,18 +78,22 @@ pub fn new_thread(
             time = SystemTime::now();
 
             //update
-            let _z = m.update(elapsed);
+            let z = m.update(elapsed).unwrap();
             cmd_sent += 3.;
 
-            let error = m.m.read_error().unwrap() as f64 / 65536.;
-
+            //let error = (m.pos-m.obbiettivo)*360.;
+            let error=m.m.read_error().unwrap() as f64;
+            println!("{}            {error}", (error+m.obbiettivo-m.pos)*360.);
+            //let error=m.m.read_encoder_value().unwrap()-zero;
+            //println!("{error}");
             //send data
             let to_send = MotorState {
                 pos: m.pos,
                 obbiettivo: m.obbiettivo,
                 timing: start.elapsed().unwrap(),
                 cmd_rate: cmd_sent / start.elapsed().unwrap().as_secs_f64(),
-                error,
+                error: error*200.,
+                reached: z==UpdateStatus::GetThere,
             };
             data_sender.send(to_send).unwrap(); //if can't sent it's ok to crash
         }
