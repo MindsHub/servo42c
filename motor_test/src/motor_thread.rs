@@ -6,7 +6,7 @@ use std::{
 
 use motor::{
     motortrait::{Motor, MotorBuilder, UpdateStatus},
-    servo42::linear_acc::Servo42LinearAccBuilder,
+    servo42::{linear_acc::Servo42LinearAccBuilder, Servo42CTrait},
 };
 use serial::standard::{serialport, DataBits, Parity, SerialPort};
 pub struct MotorState {
@@ -41,7 +41,6 @@ pub fn new_thread(
     cur_builder.acc = builder.acc;
     //builder.s=s;
     let mut m = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
-    let zero = m.m.read_encoder_value().unwrap();
     thread::spawn(move || {
         let mut time = SystemTime::now();
         let mut update_obj_timer = SystemTime::now() - Duration::from_secs(100);

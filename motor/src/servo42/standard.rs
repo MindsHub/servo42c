@@ -2,10 +2,43 @@ use serial::serialtrait::{MySize, SerialError};
 use serial::serialtrait::{Sendable, Serial};
 
 use super::MotorError::{self, *};
-use super::Servo42C;
+use super::{ActiveOn, BaudRate, Dir, MotType, Protection, Servo42CTrait, WorkMode};
+pub struct Servo42C<S: Serial> {
+    s: S,
+    address: u8,
+    pub microstep: u8,
+    pub kp: u16,
+    pub ki: u16,
+    pub kd: u16,
+    pub acc: u16,
+}
 
-impl<T: Serial> Servo42C<T> {
-    pub fn send<Data: Sendable>(&mut self, code: u8, data: Data) -> Result<(), MotorError>
+impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
+    fn empty_new(s: T) -> Servo42C<T> {
+        Servo42C::<T> {
+            address: 0xe0,
+            s,
+            kp: 1616, //1616,
+            ki: 288,  //288,
+            kd: 1616, //1616,
+            acc: 286, //286,
+            microstep: 16,
+        }
+    }
+
+    fn new(s: T) -> Result<Servo42C<T>, MotorError> {
+        let mut t = Servo42C::empty_new(s);
+        t.stop()?;
+        t.set_kp(t.kp)?;
+        t.set_ki(t.ki)?;
+        t.set_kd(t.kd)?;
+        t.set_acc(t.acc)?;
+        t.set_microstep(t.microstep)?;
+        t.set_maxt(Some(2000))?;
+        Ok(t)
+    }
+    
+    fn send<Data: Sendable>(&mut self, code: u8, data: Data) -> Result<(), MotorError>
     where
         [(); <((u8, u8), (Data, u8))>::SIZE]:,
         [(); Data::SIZE]:,
@@ -19,7 +52,7 @@ impl<T: Serial> Servo42C<T> {
         Ok(())
     }
 
-    pub fn read<Res: Sendable>(&mut self) -> Result<Res, MotorError>
+    fn read<Res: Sendable>(&mut self) -> Result<Res, MotorError>
     where
         [(); Res::SIZE]:,
         [(); <(u8, Res)>::SIZE]:,
@@ -40,7 +73,7 @@ impl<T: Serial> Servo42C<T> {
         Ok(result.0 .1)
     }
 
-    pub fn send_cmd<Data: Sendable, Res: Sendable>(
+    fn send_cmd<Data: Sendable, Res: Sendable>(
         &mut self,
         code: u8,
         data: Data,
@@ -58,58 +91,7 @@ impl<T: Serial> Servo42C<T> {
         let r: Res = self.read()?;
         Ok(r)
     }
-}
 
-#[derive(PartialEq, Eq, Debug)]
-pub enum Protection {
-    Protected,
-    UnProtected,
-}
-pub enum MotType {
-    Deg1_8,
-    Deg0_9,
-}
-
-pub enum WorkMode {
-    CrOpen,
-    CrVFoc,
-    CrUART,
-}
-
-pub enum ActiveOn {
-    Low,
-    High,
-    Hold,
-}
-pub enum Dir {
-    ClockWise,
-    CounterClockWise,
-}
-#[derive(Debug, PartialEq, Clone)]
-pub enum BaudRate {
-    B9600,
-    B19200,
-    B25000,
-    B38400,
-    B57600,
-    B115200,
-}
-
-impl From<BaudRate> for u32 {
-    fn from(value: BaudRate) -> Self {
-        match value {
-            BaudRate::B9600 => 9600,
-            BaudRate::B19200 => 19200,
-            BaudRate::B25000 => 25000,
-            BaudRate::B38400 => 38400,
-            BaudRate::B57600 => 57600,
-            BaudRate::B115200 => 115200,
-        }
-    }
-}
-
-//read impl block
-impl<T: Serial> Servo42C<T> {
     /**
      * this implementation returns an f64 that rappresent the number of full rotations
     read the encoder value (the motor should be calibrated)
@@ -117,7 +99,7 @@ impl<T: Serial> Servo42C<T> {
     - carry is the value of the encoder (giri?)
     - current value of the encoder (fase)
      */
-    pub fn read_encoder_value(&mut self) -> Result<f64, MotorError> {
+    fn read_encoder_value(&mut self) -> Result<f64, MotorError> {
         //even if we read an int is easyer to manage an f64 (64 bit so we manage even big numbers losless)
         //we retourn
         let (rotations, phase): (i32, u16) = self.send_cmd(0x30, ())?;
@@ -129,7 +111,7 @@ impl<T: Serial> Servo42C<T> {
     /**
      Read the number of pulses received.
     */
-    pub fn read_recived_pulses(&mut self) -> Result<f64, MotorError> {
+    fn read_recived_pulses(&mut self) -> Result<f64, MotorError> {
         let val: i32 = self.send_cmd(0x33, ())?;
         Ok(val as f64 / 200.)
     }
@@ -142,7 +124,7 @@ impl<T: Serial> Servo42C<T> {
     for  example,  when  the  angle  error  is  1°,  the  return  error  is
     65536/360= 182.444, and so on.
     */
-    pub fn read_error(&mut self) -> Result<f64, MotorError> {
+    fn read_error(&mut self) -> Result<f64, MotorError> {
         let err: i16 = self.send_cmd(0x39, ())?;
         Ok(err as f64 / 65536.)
     }
@@ -150,7 +132,7 @@ impl<T: Serial> Servo42C<T> {
     /**
     read the En pins status
     */
-    pub fn read_en_pin(&mut self) -> Result<bool, MotorError> {
+    fn read_en_pin(&mut self) -> Result<bool, MotorError> {
         let ret: u8 = self.send_cmd(0x3A, ())?;
         /*
         enable =1  Enabled
@@ -164,7 +146,7 @@ impl<T: Serial> Servo42C<T> {
     status =1 release success.
     status =0 release fail
      */
-    pub fn release_lock(&mut self) -> Result<(), MotorError> {
+    fn release_lock(&mut self) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x3D, ())?;
         if ret == 1 {
             Ok(())
@@ -178,7 +160,7 @@ impl<T: Serial> Servo42C<T> {
     status =1  protected.
     status =2  no protected
      */
-    pub fn read_lock(&mut self) -> Result<Protection, MotorError> {
+    fn read_lock(&mut self) -> Result<Protection, MotorError> {
         let t: u8 = self.send_cmd(0x3E, ())?;
         Ok(if t == 1 {
             Protection::Protected
@@ -186,10 +168,7 @@ impl<T: Serial> Servo42C<T> {
             Protection::UnProtected
         })
     }
-}
 
-///set impl block
-impl<T: Serial> Servo42C<T> {
     /**
     Calibrate the encoder
     （Same as the "Cal" option on screen）
@@ -197,7 +176,7 @@ impl<T: Serial> Servo42C<T> {
     - status =2  Calibrating fail.
     Note : The motor must be unloaded.
     */
-    pub fn calibrate(&mut self) -> Result<(), MotorError> {
+    fn calibrate(&mut self) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x80, 0x00u8)?;
         if ret == 1 {
             Ok(())
@@ -214,7 +193,7 @@ impl<T: Serial> Servo42C<T> {
     status =1  Set success.
     status =0  Set fail.
     */
-    pub fn set_mot_type(&mut self, mot_type: MotType) -> Result<(), MotorError> {
+    fn set_mot_type(&mut self, mot_type: MotType) -> Result<(), MotorError> {
         let to_send: u8 = match mot_type {
             MotType::Deg0_9 => 0,
             MotType::Deg1_8 => 1,
@@ -236,7 +215,7 @@ impl<T: Serial> Servo42C<T> {
     status =1  Set success.
     status =0  Set fail
     */
-    pub fn set_mode(&mut self, work_mode: WorkMode) -> Result<(), MotorError> {
+    fn set_mode(&mut self, work_mode: WorkMode) -> Result<(), MotorError> {
         let to_send: u8 = match work_mode {
             WorkMode::CrOpen => 0,
             WorkMode::CrVFoc => 1,
@@ -257,7 +236,7 @@ impl<T: Serial> Servo42C<T> {
      status =1  Set success.
      status =0  Set fail.
     */
-    pub fn set_current(&mut self, t: u8) -> Result<(), MotorError> {
+    fn set_current(&mut self, t: u8) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x83, t)?;
         if ret == 1 {
             Ok(())
@@ -274,7 +253,7 @@ impl<T: Serial> Servo42C<T> {
     status =1  Set success.
     status =0  Set fail.
     */
-    pub fn set_microstep(&mut self, mstep: u8) -> Result<(), MotorError> {
+    fn set_microstep(&mut self, mstep: u8) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x84, mstep)?;
         if ret == 1 {
             self.microstep = mstep;
@@ -291,7 +270,7 @@ impl<T: Serial> Servo42C<T> {
     - enable = 01   active high   (H)
     - enable = 02   active always (Hold)
     */
-    pub fn set_en_active(&mut self, active_on: ActiveOn) -> Result<(), MotorError> {
+    fn set_en_active(&mut self, active_on: ActiveOn) -> Result<(), MotorError> {
         let to_send: u8 = match active_on {
             ActiveOn::Low => 0,
             ActiveOn::High => 1,
@@ -311,7 +290,7 @@ impl<T: Serial> Servo42C<T> {
     - dir = 00   CW
     - dir = 01   CCW
     */
-    pub fn set_direction(&mut self, dir: Dir) -> Result<(), MotorError> {
+    fn set_direction(&mut self, dir: Dir) -> Result<(), MotorError> {
         let to_send: u8 = match dir {
             Dir::ClockWise => 0,
             Dir::CounterClockWise => 1,
@@ -328,7 +307,7 @@ impl<T: Serial> Servo42C<T> {
     Set automatic turn off the screen
     Same as the "AutoSDD" option on screen
     */
-    pub fn set_autossd(&mut self, active: bool) -> Result<(), MotorError> {
+    fn set_autossd(&mut self, active: bool) -> Result<(), MotorError> {
         let mut t: u8 = 0;
         if active {
             t += 1;
@@ -345,7 +324,7 @@ impl<T: Serial> Servo42C<T> {
     Set the motor shaft locked-rotor protection function
     Same as the "Protect" option on screen
     */
-    pub fn set_lock(&mut self, protection: Protection) -> Result<(), MotorError> {
+    fn set_lock(&mut self, protection: Protection) -> Result<(), MotorError> {
         let to_send: u8 = match protection {
             Protection::Protected => 0,
             Protection::UnProtected => 1,
@@ -363,7 +342,7 @@ impl<T: Serial> Servo42C<T> {
     （Same as the "Mplyer" option on screen）
     enabled interpolation function.
      */
-    pub fn set_subdivision_interpolation(&mut self, active: bool) -> Result<(), MotorError> {
+    fn set_subdivision_interpolation(&mut self, active: bool) -> Result<(), MotorError> {
         let mut t: u8 = 0;
         if active {
             t += 1;
@@ -386,7 +365,7 @@ impl<T: Serial> Servo42C<T> {
      - baud = 05   57600.
      - baud = 06   115200
      */
-    pub fn set_baudrate(&mut self, baud_rate: BaudRate) -> Result<(), MotorError> {
+    fn set_baudrate(&mut self, baud_rate: BaudRate) -> Result<(), MotorError> {
         let to_send: u8 = match baud_rate {
             BaudRate::B9600 => 0,
             BaudRate::B19200 => 1,
@@ -409,7 +388,7 @@ impl<T: Serial> Servo42C<T> {
      Slave address = addr + 0xe0
      addr from 0-9
      */
-    pub fn set_slave_address(&mut self, addr: u8) -> Result<(), MotorError> {
+    fn set_slave_address(&mut self, addr: u8) -> Result<(), MotorError> {
         //TODO enum?
         let ret: u8 = self.send_cmd(0x8B, addr)?;
         if ret == 1 {
@@ -424,7 +403,7 @@ impl<T: Serial> Servo42C<T> {
     （Same as the "Restore" option on screen）
     NOTE: after resetting it must be rebooted, and the serial comunication baudrate must be manually set
      */
-    pub fn reset(&mut self) -> Result<(), MotorError> {
+    fn reset(&mut self) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x3F, ())?;
         if ret == 1 {
             Ok(())
@@ -432,10 +411,7 @@ impl<T: Serial> Servo42C<T> {
             Err(NegativeResponse)
         }
     }
-}
 
-///set zero mode(how to return to zero on poweron)
-impl<T: Serial> Servo42C<T> {
     /**
      Set the mode of zeroMode
     （Same as the " 0_Mode " option on screen）
@@ -443,7 +419,7 @@ impl<T: Serial> Servo42C<T> {
      - mode = 01  DirMode
      - mode = 02  NearMode
      */
-    pub fn set_zero_mode(&mut self, mode: u8) -> Result<(), MotorError> {
+    fn set_zero_mode(&mut self, mode: u8) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x90, mode)?;
         if ret == 1 {
             Ok(())
@@ -457,7 +433,7 @@ impl<T: Serial> Servo42C<T> {
     （Same as the " set 0 " option on screen）
     NOTE: The mode of "0_Mode" needs to be set first.
      */
-    pub fn set_zero(&mut self) -> Result<(), MotorError> {
+    fn set_zero(&mut self) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x91, 0u8)?;
         if ret == 1 {
             Ok(())
@@ -472,7 +448,7 @@ impl<T: Serial> Servo42C<T> {
     NOTE: The mode of "0_Mode" needs to be set first.
     (speed = 0~4, the smaller the value, the faster the speed)
      */
-    pub fn set_zero_speed(&mut self, speed: u8) -> Result<(), MotorError> {
+    fn set_zero_speed(&mut self, speed: u8) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x92, speed)?;
         if ret == 1 {
             Ok(())
@@ -491,7 +467,7 @@ impl<T: Serial> Servo42C<T> {
     with the actual running direction of the motor, otherwise it will
     fail to return to zero
      */
-    pub fn set_zero_dir(&mut self, dir: u8) -> Result<(), MotorError> {
+    fn set_zero_dir(&mut self, dir: u8) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x93, dir)?;
         if ret == 1 {
             Ok(())
@@ -504,7 +480,7 @@ impl<T: Serial> Servo42C<T> {
      Set dir of zero mode
     （Same as the " Goto 0" option on screen）
      */
-    pub fn goto_zero(&mut self) -> Result<(), MotorError> {
+    fn goto_zero(&mut self) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x94, 0u8)?;
         if ret == 1 {
             Ok(())
@@ -512,14 +488,11 @@ impl<T: Serial> Servo42C<T> {
             Err(NegativeResponse)
         }
     }
-}
 
-//Set PID/ACC/Torque command
-impl<T: Serial> Servo42C<T> {
     /**
     Set the position Kp parameter
     */
-    pub fn set_kp(&mut self, kp: u16) -> Result<(), MotorError> {
+    fn set_kp(&mut self, kp: u16) -> Result<(), MotorError> {
         self.kp = kp;
         let ret: u8 = self.send_cmd(0xA1, kp)?;
         if ret == 1 {
@@ -531,7 +504,7 @@ impl<T: Serial> Servo42C<T> {
     /**
     Set the position Ki parameter
     */
-    pub fn set_ki(&mut self, ki: u16) -> Result<(), MotorError> {
+    fn set_ki(&mut self, ki: u16) -> Result<(), MotorError> {
         self.ki = ki;
         let ret: u8 = self.send_cmd(0xA2, self.ki)?;
         if ret == 1 {
@@ -543,7 +516,7 @@ impl<T: Serial> Servo42C<T> {
     /**
     Set the position Ki parameter
     */
-    pub fn set_kd(&mut self, kd: u16) -> Result<(), MotorError> {
+    fn set_kd(&mut self, kd: u16) -> Result<(), MotorError> {
         self.kd = kd;
         let ret: u8 = self.send_cmd(0xA3, kd)?;
         if ret == 1 {
@@ -557,7 +530,7 @@ impl<T: Serial> Servo42C<T> {
     Set the acceleration (ACC) parameter
     for unknown reasons it resets the position on the motor...
     */
-    pub fn set_acc(&mut self, acc: u16) -> Result<(), MotorError> {
+    fn set_acc(&mut self, acc: u16) -> Result<(), MotorError> {
         self.acc = acc;
         let ret: u8 = self.send_cmd(0xA4, self.acc)?;
         if ret == 1 {
@@ -570,7 +543,7 @@ impl<T: Serial> Servo42C<T> {
     /**
     Set the maximum torque (MaxT) parameter
     */
-    pub fn set_maxt(&mut self, kp: Option<u16>) -> Result<(), MotorError> {
+    fn set_maxt(&mut self, kp: Option<u16>) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0xA5, kp.unwrap_or(0x4B0))?;
         if ret == 1 {
             Ok(())
@@ -578,14 +551,11 @@ impl<T: Serial> Servo42C<T> {
             Err(MotorError::NegativeResponse)
         }
     }
-}
 
-//Serial control comands
-impl<T: Serial> Servo42C<T> {
     /**
     Set the En pin status in CR_UART mode.
     */
-    pub fn set_enable(&mut self, en: bool) -> Result<(), MotorError> {
+    fn set_enable(&mut self, en: bool) -> Result<(), MotorError> {
         let mut b = 0u8;
         if en {
             b += 1;
@@ -609,7 +579,7 @@ impl<T: Serial> Servo42C<T> {
     Vrpm = (Speed × 30000)/(Mstep × 400)(RPM)   (0.9 degree motor)
     Note: the Vrpm no great than 2000RPM.
      */
-    pub fn set_speed(&mut self, speed: i8) -> Result<u8, MotorError> {
+    fn set_speed(&mut self, speed: i8) -> Result<u8, MotorError> {
         if speed as f32 * 30000. / (self.microstep as f32 * 200.) > 2000. {
             return Err(NegativeResponse);
         }
@@ -625,18 +595,19 @@ impl<T: Serial> Servo42C<T> {
     /**
     Stop motor
     */
-    pub fn stop(&mut self) -> Result<u8, MotorError> {
+    fn stop(&mut self) -> Result<u8, MotorError> {
         self.send_cmd(0xF7, ())
     }
     /**
     DO NOT USE THIS FUNCTION, IT'S BLOCKING!!
     */
-    pub fn goto(&mut self, speed: u8, dist: u32) -> u8 {
+    fn goto(&mut self, speed: u8, dist: u32) -> u8 {
         let ret: u8 = self.send_cmd(0xFD, (speed, dist)).unwrap();
         //let stopped: u8= self.read().unwrap();
         //println!("WTF, received {}", stopped);
         ret
     }
+    
 }
 
 #[cfg(test)]

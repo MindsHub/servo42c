@@ -1,13 +1,15 @@
 #![no_std]
 #![no_main]
+
 use panic_halt as _;
-use motor::servo42::{self, Servo42C};
+use motor::servo42::standard::Servo42C;
+use motor::servo42::Servo42CTrait;
 #[arduino_hal::entry]
 fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
     let serial = arduino_hal::default_serial!(dp, pins, 57600);
-    let mut t: Servo42C<_> = servo42::Servo42C::new(serial).unwrap();
+    let mut t: Servo42C<_> = Servo42C::new(serial).unwrap();
     // Wait for a character and print current time once it is received
     loop {
         //t.calibrate();

@@ -4,9 +4,10 @@ use serial::serialtrait::Serial;
 
 use crate::motortrait::UpdateStatus;
 
+use super::standard::Servo42C;
 use super::{Motor, MotorBuilder};
-
-use super::{MotorError, Servo42C};
+use crate::servo42::Servo42CTrait;
+use super::MotorError;
 use libm;
 ///Helper function
 impl<T: Serial> Servo42LinearAcc<T> {
@@ -70,60 +71,12 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
         Ok(())
     }
 
-    /*fn update(&mut self, time_from_last: Duration) -> Result<(), MotorError> {
-        self.pos = self.m.read_recived_pulses().unwrap() / self.m.microstep as f64;
-
-        //calcolo lo spazio di frenata s=V^2/2a
-        //let d_stop: f64 = self.cur_speed * self.cur_speed / 2. / self.acc;
-        let distanza_rimanente = self.obbiettivo - self.pos;
-        //let max_speed=
-        let speed_dif = self.acc * time_from_last.as_secs_f64();
-
-
-        /*if abs(distanza_rimanente)<0.05 && abs(self.cur_speed)<0.1{
-            let _ = self.m.stop();
-            return Ok(());
-        }
-        if distanza_rimanente * self.cur_speed >= 0. {
-            //se vado nella direzione corretta
-            if abs(distanza_rimanente) > d_stop {
-                //e ho spazio accelero
-                let mut next_speed= self.cur_speed;
-                change_speed(&mut next_speed, speed_dif);
-                let d_stop: f64 = next_speed * next_speed / 2. / self.acc;
-                if abs(d_stop)<abs(distanza_rimanente-next_speed*time_from_last.as_secs_f64()){
-                    self.cur_speed=next_speed;
-                }else{
-                    println!("wtf");
-                }
-
-
-            } else {
-                //se non ho spazio rallento
-                change_speed(&mut self.cur_speed, -speed_dif);
-            }
-        } else {
-            //rallento se vado nella direzione sbagliata
-            change_speed(&mut self.cur_speed, -speed_dif);
-        }
-        if self.cur_speed > self.max_speed {
-            self.cur_speed = self.max_speed;
-        }
-        if self.cur_speed < -self.max_speed {
-            self.cur_speed = -self.max_speed;
-        }
-        let to_set = 200. * self.m.microstep as f64 / 500. * self.cur_speed;
-        //change_speed(&mut to_set, 1.0);
-        let _ = self.m.set_speed(to_set as i8);*/
-
-        Ok(())
-    }*/
     fn update(&mut self, time_from_last: Duration) -> Result<UpdateStatus, MotorError> {
-        if abs(self.m.read_error()? as f64) > self.max_err {
+        if abs(self.m.read_error()?) > self.max_err {
             let _ = self.m.stop();
             return Err(MotorError::Stuck);
         }
-        self.pos = self.m.read_recived_pulses().unwrap() / self.m.microstep as f64;
+        self.pos = self.m.read_recived_pulses()? / self.m.microstep as f64;
         let speed_dif = self.acc * time_from_last.as_secs_f64();
         let distanza_rimanente =
             self.obbiettivo - self.pos - self.cur_speed * time_from_last.as_secs_f64();

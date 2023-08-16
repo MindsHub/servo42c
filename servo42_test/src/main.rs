@@ -4,7 +4,7 @@ use std::{
 };
 
 use eframe::egui::{self};
-use motor::servo42::Servo42C;
+use motor::servo42::{standard::Servo42C, Servo42CTrait};
 use serial::standard::{serialport, serialport::*};
 fn main() {
     let _ = eframe::run_native(
