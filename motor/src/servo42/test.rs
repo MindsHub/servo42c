@@ -38,7 +38,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
         Ok(t)
     }
 
-    fn send<Data: serial::serialtrait::Sendable>(&mut self, code: u8, data: Data) -> Result<(), super::MotorError>
+    fn send<Data: serial::serialtrait::Sendable>(&mut self, _code: u8, _data: Data) -> Result<(), super::MotorError>
     where
         [(); <((u8, u8), (Data, u8))>::SIZE]:,
         [(); Data::SIZE]:,
@@ -57,8 +57,8 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
 
     fn send_cmd<Data: serial::serialtrait::Sendable, Res: serial::serialtrait::Sendable>(
         &mut self,
-        code: u8,
-        data: Data,
+        _code: u8,
+        _data: Data,
     ) -> Result<Res, super::MotorError>
     where
         [(); Data::SIZE]:,
@@ -99,47 +99,47 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
         todo!()
     }
 
-    fn set_mot_type(&mut self, mot_type: super::MotType) -> Result<(), super::MotorError> {
+    fn set_mot_type(&mut self, _mot_type: super::MotType) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_mode(&mut self, work_mode: super::WorkMode) -> Result<(), super::MotorError> {
+    fn set_mode(&mut self, _work_mode: super::WorkMode) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_current(&mut self, t: u8) -> Result<(), super::MotorError> {
+    fn set_current(&mut self, _t: u8) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_microstep(&mut self, mstep: u8) -> Result<(), super::MotorError> {
+    fn set_microstep(&mut self, _mstep: u8) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_en_active(&mut self, active_on: super::ActiveOn) -> Result<(), super::MotorError> {
+    fn set_en_active(&mut self, _active_on: super::ActiveOn) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_direction(&mut self, dir: super::Dir) -> Result<(), super::MotorError> {
+    fn set_direction(&mut self, _dir: super::Dir) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_autossd(&mut self, active: bool) -> Result<(), super::MotorError> {
+    fn set_autossd(&mut self, _active: bool) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_lock(&mut self, protection: super::Protection) -> Result<(), super::MotorError> {
+    fn set_lock(&mut self, _protection: super::Protection) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_subdivision_interpolation(&mut self, active: bool) -> Result<(), super::MotorError> {
+    fn set_subdivision_interpolation(&mut self, _active: bool) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_baudrate(&mut self, baud_rate: super::BaudRate) -> Result<(), super::MotorError> {
+    fn set_baudrate(&mut self, _baud_rate: super::BaudRate) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_slave_address(&mut self, addr: u8) -> Result<(), super::MotorError> {
+    fn set_slave_address(&mut self, _addr: u8) -> Result<(), super::MotorError> {
         todo!()
     }
 
@@ -147,7 +147,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
         todo!()
     }
 
-    fn set_zero_mode(&mut self, mode: u8) -> Result<(), super::MotorError> {
+    fn set_zero_mode(&mut self, _mode: u8) -> Result<(), super::MotorError> {
         todo!()
     }
 
@@ -155,11 +155,11 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
         todo!()
     }
 
-    fn set_zero_speed(&mut self, speed: u8) -> Result<(), super::MotorError> {
+    fn set_zero_speed(&mut self, _speed: u8) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_zero_dir(&mut self, dir: u8) -> Result<(), super::MotorError> {
+    fn set_zero_dir(&mut self, _dir: u8) -> Result<(), super::MotorError> {
         todo!()
     }
 
@@ -167,31 +167,31 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
         todo!()
     }
 
-    fn set_kp(&mut self, kp: u16) -> Result<(), super::MotorError> {
+    fn set_kp(&mut self, _kp: u16) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_ki(&mut self, ki: u16) -> Result<(), super::MotorError> {
+    fn set_ki(&mut self, _ki: u16) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_kd(&mut self, kd: u16) -> Result<(), super::MotorError> {
+    fn set_kd(&mut self, _kd: u16) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_acc(&mut self, acc: u16) -> Result<(), super::MotorError> {
+    fn set_acc(&mut self, _acc: u16) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_maxt(&mut self, kp: Option<u16>) -> Result<(), super::MotorError> {
+    fn set_maxt(&mut self, _kp: Option<u16>) -> Result<(), super::MotorError> {
         todo!()
     }
 
-    fn set_enable(&mut self, en: bool) -> Result<(), MotorError> {
+    fn set_enable(&mut self, _en: bool) -> Result<(), MotorError> {
         todo!()
     }
 
-    fn set_speed(&mut self, speed: i8) -> Result<u8, MotorError> {
+    fn set_speed(&mut self, _speed: i8) -> Result<u8, MotorError> {
         todo!()
     }
 
@@ -199,7 +199,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
         todo!()
     }
 
-    fn goto(&mut self, speed: u8, dist: u32) -> u8 {
+    fn goto(&mut self, _speed: u8, _dist: u32) -> u8 {
         todo!()
     }
 }
