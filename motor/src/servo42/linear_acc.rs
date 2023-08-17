@@ -37,7 +37,7 @@ fn abs(val: f64) -> f64 {
         -val
     }
 }
-
+#[derive(Debug)]
 pub struct Servo42LinearAcc<T: Serial, S: Servo42CTrait<T>> {
     //motore incapsulato
     pub m: S,
@@ -81,7 +81,7 @@ impl<T: Serial, S: Servo42CTrait<T>> Motor for Servo42LinearAcc<T, S>{
         let speed_dif = self.acc * time_from_last.as_secs_f64();
         let distanza_rimanente =
             self.obbiettivo - self.pos - self.cur_speed * time_from_last.as_secs_f64();
-        if abs(self.obbiettivo - self.pos) < self.precision {
+        if abs(self.obbiettivo - self.pos) <= self.precision {
             self.m.stop()?;
             return Ok(UpdateStatus::GetThere);
         }
@@ -153,4 +153,77 @@ impl<T: Serial> Servo42LinearAccBuilder<T> {
             precision: 0.005,
         }
     }
+}
+
+#[cfg(test)]
+#[cfg(feature = "std")]
+mod tests {
+    use core::time::Duration;
+
+    use serial::test::SerialTest;
+
+    use crate::{motortrait::{MotorBuilder, Motor, UpdateStatus}, servo42::test::Servo42CTest};
+
+    use super::{Servo42LinearAccBuilder, Servo42LinearAcc};
+
+    fn muovi(acc: f64, speed: f64, dist: f64){
+        let s=SerialTest::default();
+        let mut z = Servo42LinearAccBuilder::new(s);
+        z.acc=acc;
+        z.max_speed=speed;
+        z.precision=0.007;
+        let mut m: Servo42LinearAcc<SerialTest, Servo42CTest<SerialTest>> = z.build().unwrap();
+        let time = if dist*acc<=speed*speed{
+            (dist/acc).sqrt()*2.
+        }else{
+            2.*speed/acc+(dist-speed*speed/acc-m.precision)/speed
+        };
+        let mut iter=0;
+        let max_iter=(time*1120.)as i32;
+        let min_iter=(time*900.)as i32;
+
+        m.goto(dist).unwrap();
+        while UpdateStatus::Working== m.update(Duration::from_millis(1)).unwrap() && iter<max_iter{
+            iter+=1;
+        }
+        //println!("{}<{}<{} {}", min_iter, iter, max_iter, m.obbiettivo-m.pos);
+        //assert_eq!(m.obbiettivo, m.pos);
+        assert!(min_iter<iter && iter<max_iter)
+    }
+    #[test]
+    fn arrivo(){
+        for x in 2..=10{
+            for y in 1..=10{
+                for z in 1..=10{
+                    //println!("{x} {y} {z}");
+                    muovi(x as f64, y as f64, z as f64);
+                }
+            }
+        }
+        
+    
+        
+       
+        
+    }
+
+    /*#[bench]
+    fn arrivo(b: &mut Bencher){
+        b.iter(||{
+            let s=SerialTest::default();
+            let mut z = Servo42LinearAccBuilder::new(s);
+            z.acc=10.0;
+            z.max_speed=10.0;
+            z.precision=0.005;
+            let mut m: Servo42LinearAcc<SerialTest, Servo42CTest<SerialTest>> = z.build().unwrap();
+            m.goto(10.0).unwrap();
+            let mut iter=0;
+            while UpdateStatus::Working== m.update(Duration::from_millis(1)).unwrap() && iter<10000{
+                iter+=1;
+            }
+        
+            assert!(1950<iter && iter<2050)
+        });
+        
+    }*/
 }

@@ -5,6 +5,7 @@ use serial::serialtrait::Serial;
 use super::{Servo42CTrait, MotorError};
 use serial::serialtrait::MySize;
 
+#[derive(Debug)]
 pub struct Servo42CTest<S: Serial> {
     microstep: u8,
     kp: u16,

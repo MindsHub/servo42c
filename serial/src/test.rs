@@ -4,7 +4,7 @@ use crate::serialtrait::SerialError;
 
 use super::serialtrait::Serial;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct SerialTest {
     map: HashMap<Vec<u8>, Vec<u8>>,
     response: Option<Vec<u8>>,

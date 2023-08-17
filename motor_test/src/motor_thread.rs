@@ -39,8 +39,11 @@ pub fn new_thread(
     let mut cur_builder = Servo42LinearAccBuilder::new(s);
     cur_builder.max_speed = builder.max_speed;
     cur_builder.acc = builder.acc;
+    cur_builder.precision=builder.precision;
+    cur_builder.max_err=builder.max_err;
     //builder.s=s;
     let mut m: Servo42LinearAcc<Box<dyn SerialPort>, Servo42CTest<Box<dyn SerialPort>>> = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
+    println!("{m:?}");
     thread::spawn(move || {
         let mut time = SystemTime::now();
         let mut update_obj_timer = SystemTime::now() - Duration::from_secs(100);
@@ -66,7 +69,7 @@ pub fn new_thread(
                 state = !state;
 
                 if state {
-                    let _ = m.goto(60.);
+                    let _ = m.goto(2.);
                 } else {
                     let _ = m.goto(0.);
                 }
@@ -78,7 +81,7 @@ pub fn new_thread(
 
             //update
             let z = m.update(elapsed).unwrap();
-            println!("{}", elapsed.as_micros());
+            //println!("{}", m.pos-m.obbiettivo);
             cmd_sent += 3.;
 
             //let error = (m.pos-m.obbiettivo)*360.;
