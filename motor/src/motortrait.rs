@@ -7,11 +7,11 @@ pub enum UpdateStatus {
     Working,
     GetThere,
 }
-pub trait Motor //Self: Sized,
+pub trait Motor where Self: Sized,
 {
     type PosUnit;
     type Info: Debug;
-    type Builder: MotorBuilder;
+    type Builder: MotorBuilder<Self>;
     ///set a new objective
     fn goto(&mut self, pos: Self::PosUnit) -> Result<(), MotorError>;
     ///get printable info
@@ -26,7 +26,6 @@ pub trait Motor //Self: Sized,
     //fn new() -> Self::Builder;
 }
 
-pub trait MotorBuilder {
-    type M: Motor;
-    fn build(self) -> Result<Self::M, MotorError>;
+pub trait MotorBuilder<M: Motor> {
+    fn build(self) -> Result<M, MotorError>;
 }

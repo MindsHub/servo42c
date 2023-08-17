@@ -1,16 +1,16 @@
+use core::marker::PhantomData;
 use core::time::Duration;
 
 use serial::serialtrait::Serial;
 
 use crate::motortrait::UpdateStatus;
 
-use super::standard::Servo42C;
 use super::{Motor, MotorBuilder};
 use crate::servo42::Servo42CTrait;
 use super::MotorError;
 use libm;
 ///Helper function
-impl<T: Serial> Servo42LinearAcc<T> {
+impl<T: Serial, S: Servo42CTrait<T>> Servo42LinearAcc<T, S> {
     fn change_speed(&mut self, quantity: f64) {
         if self.cur_speed > 0. {
             self.cur_speed += quantity;
@@ -38,9 +38,9 @@ fn abs(val: f64) -> f64 {
     }
 }
 
-pub struct Servo42LinearAcc<T: Serial> {
+pub struct Servo42LinearAcc<T: Serial, S: Servo42CTrait<T>> {
     //motore incapsulato
-    pub m: Servo42C<T>,
+    pub m: S,
 
     //dati aggiuntivi
     pub obbiettivo: f64,
@@ -52,6 +52,7 @@ pub struct Servo42LinearAcc<T: Serial> {
     pub acc: f64,
     pub max_err: f64,
     pub precision: f64,
+    ph: PhantomData<T>,
 }
 pub struct Servo42LinearAccBuilder<T: Serial> {
     pub s: T,
@@ -61,7 +62,7 @@ pub struct Servo42LinearAccBuilder<T: Serial> {
     pub precision: f64,
 }
 
-impl<T: Serial> Motor for Servo42LinearAcc<T> {
+impl<T: Serial, S: Servo42CTrait<T>> Motor for Servo42LinearAcc<T, S>{
     type PosUnit = f64;
     type Info = MotorError;
     type Builder = Servo42LinearAccBuilder<T>;
@@ -76,7 +77,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
             let _ = self.m.stop();
             return Err(MotorError::Stuck);
         }
-        self.pos = self.m.read_recived_pulses()? / self.m.microstep as f64;
+        self.pos = self.m.read_recived_pulses()? / self.m.get_microstep() as f64;
         let speed_dif = self.acc * time_from_last.as_secs_f64();
         let distanza_rimanente =
             self.obbiettivo - self.pos - self.cur_speed * time_from_last.as_secs_f64();
@@ -106,7 +107,7 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
             }
         }
 
-        let to_set = 200. * self.m.microstep as f64 / 500. * self.cur_speed;
+        let to_set = 200. * self.m.get_microstep() as f64 / 500. * self.cur_speed;
         let _ = self.m.set_speed(to_set as i8);
 
         Ok(UpdateStatus::Working)
@@ -125,12 +126,10 @@ impl<T: Serial> Motor for Servo42LinearAcc<T> {
     }
 }
 
-impl<T: Serial> MotorBuilder for Servo42LinearAccBuilder<T> {
-    type M = Servo42LinearAcc<T>;
-
-    fn build(self) -> Result<Self::M, MotorError> {
-        Ok(Self::M {
-            m: Servo42C::new(self.s)?,
+impl<T: Serial, S: Servo42CTrait<T>> MotorBuilder<Servo42LinearAcc<T, S>> for Servo42LinearAccBuilder<T> {
+    fn build(self) -> Result<Servo42LinearAcc<T, S>, MotorError> {
+        Ok( Servo42LinearAcc{
+            m: Servo42CTrait::new(self.s)?,
             obbiettivo: 0.,
             cur_speed: 0.,
             pos: 0.,
@@ -138,9 +137,11 @@ impl<T: Serial> MotorBuilder for Servo42LinearAccBuilder<T> {
             acc: self.acc,
             max_err: self.max_err,
             precision: self.precision,
+            ph: PhantomData,
         })
     }
 }
+
 
 impl<T: Serial> Servo42LinearAccBuilder<T> {
     pub fn new(s: T) -> Servo42LinearAccBuilder<T> {

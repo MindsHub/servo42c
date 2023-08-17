@@ -86,9 +86,11 @@ pub trait Servo42CTrait<T> where Self: Sized,
     Set the En pin status in CR_UART mode.
     */
     fn set_enable(&mut self, en: bool) -> Result<(), MotorError>;
-    fn set_speed(&mut self, speed: i8) -> Result<u8, MotorError>;
-    fn stop(&mut self) -> Result<u8, MotorError>;
+    fn set_speed(&mut self, speed: i8) -> Result<(), MotorError>;
+    fn stop(&mut self) -> Result<(), MotorError>;
     fn goto(&mut self, speed: u8, dist: u32) -> u8;
+
+    fn get_microstep(&self)->u8;
 }
 
 #[derive(PartialEq, Eq, Debug)]

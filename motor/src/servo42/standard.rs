@@ -579,7 +579,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     Vrpm = (Speed × 30000)/(Mstep × 400)(RPM)   (0.9 degree motor)
     Note: the Vrpm no great than 2000RPM.
      */
-    fn set_speed(&mut self, speed: i8) -> Result<u8, MotorError> {
+    fn set_speed(&mut self, speed: i8) -> Result<(), MotorError> {
         if speed as f32 * 30000. / (self.microstep as f32 * 200.) > 2000. {
             return Err(NegativeResponse);
         }
@@ -588,15 +588,16 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
         } else {
             speed as u8 | 0x80
         };
-        let ret: u8 = self.send_cmd(0xF6, to_send)?;
-        Ok(ret)
+        let _ret: u8 = self.send_cmd(0xF6, to_send)?;
+        Ok(())
     }
 
     /**
     Stop motor
     */
-    fn stop(&mut self) -> Result<u8, MotorError> {
-        self.send_cmd(0xF7, ())
+    fn stop(&mut self) -> Result<(), MotorError> {
+        let _: u8=self.send_cmd(0xF7, ())?;
+        Ok(())
     }
     /**
     DO NOT USE THIS FUNCTION, IT'S BLOCKING!!
@@ -606,6 +607,10 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
         //let stopped: u8= self.read().unwrap();
         //println!("WTF, received {}", stopped);
         ret
+    }
+
+    fn get_microstep(&self)->u8 {
+        self.microstep
     }
     
 }
