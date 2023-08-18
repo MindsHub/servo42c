@@ -1,28 +1,27 @@
 #![no_std]
 #![no_main]
+#![feature(abi_avr_interrupt)]
 
+use arduino_hal::{Usart, hal::Atmega};
+use avr_device::atmega328p::USART0;
+use embedded_hal::serial::Write;
+use millis::millis_init;
+use motor::{servo42::linear_acc::{Servo42LinearAccBuilder, Servo42LinearAcc}, motortrait::{MotorBuilder, Motor}};
 use panic_halt as _;
-use motor::servo42::standard::Servo42C;
-use motor::servo42::Servo42CTrait;
+mod millis;
 #[arduino_hal::entry]
 fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
+    let mut tmr = dp.TC1;
+
     let serial = arduino_hal::default_serial!(dp, pins, 57600);
-    let mut t: Servo42C<_> = Servo42C::new(serial).unwrap();
+    //let mut z  =bitbang_hal::serial::Serial::new(pins.d10., pins.d11, dp.TC1.into());
+    //z.write(b'x');
+    millis_init(dp.TC0);
+    //let m=Servo42LinearAccBuilder::new(serial).build().unwrap();
     // Wait for a character and print current time once it is received
     loop {
-        //t.calibrate();
-        let _ =t.read_encoder_value();
-        //let s=[0, 0, 0];
-        //let _ =serial.write(s.as_slice());
-        //t.se
-        //serial.write(&mut send);
-        //serial.read(&mut buff);
-        //serial.write(&mut buff);
-        //serial.write(b'w');
-        //let _ = t.read_encoder_value();
-        //while z.is_ok(){}
-        //arduino_hal::delay_ms(1000);
+        //m.update(time_from_last);
     }
 }

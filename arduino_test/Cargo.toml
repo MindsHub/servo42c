@@ -18,7 +18,7 @@ nb = "1.1.0"
 embedded-hal = "0.2.3"
 avr-device = "0.5.1"
 motor={path="../motor",  default-features = false, features=["arduino"]}
-#bitbang-hal="0.3.2"
+bitbang-hal="0.3.2"
 
 [dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"
