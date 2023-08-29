@@ -5,7 +5,7 @@ use std::{
 
 use crate::motor_thread::new_thread;
 use eframe::egui::{self, plot::Points};
-use motor::servo42::{linear_acc::Servo42LinearAccBuilder, BaudRate};
+use motor::prelude::*;
 use motor_thread::{EmptySerial, MotorComand, MotorState};
 use serial::standard::{serialport, SerialPort};
 pub mod motor_thread;

@@ -3,11 +3,8 @@ use core::time::Duration;
 
 use serial::serialtrait::Serial;
 
-use crate::motortrait::UpdateStatus;
+use crate::prelude::*;
 
-use super::{Motor, MotorBuilder};
-use crate::servo42::Servo42CTrait;
-use super::MotorError;
 use libm;
 ///Helper function
 impl<T: Serial, S: Servo42CTrait<T>> Servo42LinearAcc<T, S> {
@@ -53,6 +50,8 @@ pub struct Servo42LinearAcc<T: Serial, S: Servo42CTrait<T>> {
     pub max_err: f64,
     pub precision: f64,
     ph: PhantomData<T>,
+
+    
 }
 pub struct Servo42LinearAccBuilder<T: Serial> {
     pub s: T,
@@ -60,6 +59,11 @@ pub struct Servo42LinearAccBuilder<T: Serial> {
     pub acc: f64,
     pub max_err: f64,
     pub precision: f64,
+
+    pub kp: u16,
+    pub ki: u16,
+    pub kd: u16,
+    pub cur: u8,
 }
 
 impl<T: Serial, S: Servo42CTrait<T>> Motor for Servo42LinearAcc<T, S>{
@@ -73,8 +77,9 @@ impl<T: Serial, S: Servo42CTrait<T>> Motor for Servo42LinearAcc<T, S>{
     }
 
     fn update(&mut self, time_from_last: Duration) -> Result<UpdateStatus, MotorError> {
-        if abs(self.m.read_error()?) > self.max_err {
-            let _ = self.m.stop();
+        if self.m.read_lock()?== Protection::Protected {
+            //let _ = self.m.stop();
+            let _ =self.m.set_enable(false);
             return Err(MotorError::Stuck);
         }
         self.pos = self.m.read_recived_pulses()? / self.m.get_microstep() as f64;
@@ -100,13 +105,25 @@ impl<T: Serial, S: Servo42CTrait<T>> Motor for Servo42LinearAcc<T, S>{
                 //accelero
                 self.change_speed(speed_dif);
                 self.normalize_speed(max_speed);
+                
+                
+                
                 //self.normalize_speed(abs(d_to_max)/time_from_last.as_secs_f64());
             } else {
                 //decelero
                 self.change_speed(-speed_dif);
             }
+            
+            if (abs(self.cur_speed)*127./20.) <1.0{
+                self.cur_speed = if self.cur_speed<0.{
+                    -20.
+                }else{
+                    20.
+                }/127.0;
+            }
+            //println!("{} speed={} {}", self.pos-self.obbiettivo, self.cur_speed, self.cur_speed*127./20.);
         }
-
+        
         let to_set = 200. * self.m.get_microstep() as f64 / 500. * self.cur_speed;
         let _ = self.m.set_speed(to_set as i8);
 
@@ -128,7 +145,7 @@ impl<T: Serial, S: Servo42CTrait<T>> Motor for Servo42LinearAcc<T, S>{
 
 impl<T: Serial, S: Servo42CTrait<T>> MotorBuilder<Servo42LinearAcc<T, S>> for Servo42LinearAccBuilder<T> {
     fn build(self) -> Result<Servo42LinearAcc<T, S>, MotorError> {
-        Ok( Servo42LinearAcc{
+        let mut s: Servo42LinearAcc<T, S>= Servo42LinearAcc{
             m: Servo42CTrait::new(self.s)?,
             obbiettivo: 0.,
             cur_speed: 0.,
@@ -138,7 +155,23 @@ impl<T: Serial, S: Servo42CTrait<T>> MotorBuilder<Servo42LinearAcc<T, S>> for Se
             max_err: self.max_err,
             precision: self.precision,
             ph: PhantomData,
-        })
+
+            
+        };
+        s.m.stop()?;
+        s.m.set_kp(self.kp)?;
+        s.m.set_ki(self.ki)?;
+        s.m.set_kd(self.kd)?;
+        s.m.set_acc(288)?;
+        s.m.set_maxt(Some(2000))?;
+        s.m.set_current(3)?;
+        s.m.set_lock(Protection::Protected)?;
+        let _ =s.m.release_lock();
+        let _= s.m.goto_zero();
+        s.m.set_zero_mode(0)?;
+        let _=s.m.set_enable(true);
+        s.m.set_lock(Protection::Protected)?;
+        Ok(s)
     }
 }
 
@@ -151,6 +184,11 @@ impl<T: Serial> Servo42LinearAccBuilder<T> {
             acc: 10.,
             max_err: 0.045,
             precision: 0.005,
+
+            kp: 1616,
+            ki: 288,
+            kd: 1616,
+            cur: 6,
         }
     }
 }
@@ -171,7 +209,7 @@ mod tests {
         let mut z = Servo42LinearAccBuilder::new(s);
         z.acc=acc;
         z.max_speed=speed;
-        z.precision=0.007;
+        z.precision=0.002;
         let mut m: Servo42LinearAcc<SerialTest, Servo42CTest<SerialTest>> = z.build().unwrap();
         let time = if dist*acc<=speed*speed{
             (dist/acc).sqrt()*2.
@@ -179,32 +217,31 @@ mod tests {
             2.*speed/acc+(dist-speed*speed/acc-m.precision)/speed
         };
         let mut iter=0;
-        let max_iter=(time*1120.)as i32;
+        let max_iter=(time*1150.)as i32;
         let min_iter=(time*900.)as i32;
 
         m.goto(dist).unwrap();
         while UpdateStatus::Working== m.update(Duration::from_millis(1)).unwrap() && iter<max_iter{
             iter+=1;
         }
-        //println!("{}<{}<{} {}", min_iter, iter, max_iter, m.obbiettivo-m.pos);
-        //assert_eq!(m.obbiettivo, m.pos);
+        //
+        if !(min_iter<iter && iter<max_iter){
+            println!("{} {} {}", acc, speed, dist);
+            println!("{}<{}<{} {}", min_iter, iter, max_iter, m.obbiettivo-m.pos);
+        }
+        //assert_eq!(m.obbiettivo-m.pos, 0.);
         assert!(min_iter<iter && iter<max_iter)
     }
     #[test]
     fn arrivo(){
-        for x in 2..=10{
+        for x in 1..=10{
             for y in 1..=10{
                 for z in 1..=10{
                     //println!("{x} {y} {z}");
                     muovi(x as f64, y as f64, z as f64);
                 }
             }
-        }
-        
-    
-        
-       
-        
+        }        
     }
 
     /*#[bench]

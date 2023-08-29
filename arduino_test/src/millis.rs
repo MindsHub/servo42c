@@ -1,8 +1,7 @@
-#![no_std]
-#![no_main]
 
 
 use core::cell;
+use embedded_hal::timer::{CountDown, Periodic};
 use panic_halt as _;
 
 
@@ -26,6 +25,7 @@ static MILLIS_COUNTER: avr_device::interrupt::Mutex<cell::Cell<u32>> =
     avr_device::interrupt::Mutex::new(cell::Cell::new(0));
 
 pub fn millis_init(tc0: arduino_hal::pac::TC0) {
+    
     // Configure the timer for the above interval (in CTC mode)
     // and enable its interrupt.
     tc0.tccr0a.write(|w| w.wgm0().ctc());
@@ -54,6 +54,6 @@ fn TIMER0_COMPA() {
     })
 }
 
-fn millis() -> u32 {
+pub fn millis() -> u32 {
     avr_device::interrupt::free(|cs| MILLIS_COUNTER.borrow(cs).get())
 }

@@ -1,13 +1,11 @@
+
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
     thread,
     time::{Duration, SystemTime},
 };
 
-use motor::{
-    motortrait::{Motor, MotorBuilder, UpdateStatus},
-    servo42::{linear_acc::{Servo42LinearAccBuilder, Servo42LinearAcc}, Servo42CTrait, test::Servo42CTest},
-};
+use motor::prelude::*;
 use serial::standard::{serialport, DataBits, Parity, SerialPort};
 pub struct MotorState {
     pub pos: f64,
@@ -36,14 +34,15 @@ pub fn new_thread(
         .data_bits(DataBits::Eight)
         .flow_control(serial::standard::FlowControl::None)
         .open()?;
-    let mut cur_builder = Servo42LinearAccBuilder::new(s);
+    //let mut cur_builder: Servo42LinearAccBuilder<Box<dyn SerialPort>> = Servo42LinearAccBuilder::new(Box::new(EmptySerial {}));
+    let mut cur_builder: Servo42LinearAccBuilder<Box<dyn SerialPort>> = Servo42LinearAccBuilder::new(s);
     cur_builder.max_speed = builder.max_speed;
     cur_builder.acc = builder.acc;
     cur_builder.precision=builder.precision;
     cur_builder.max_err=builder.max_err;
     //builder.s=s;
-    let mut m: Servo42LinearAcc<Box<dyn SerialPort>, Servo42CTest<Box<dyn SerialPort>>> = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
-    println!("{m:?}");
+    let mut m: Servo42LinearAcc<Box<dyn SerialPort>, Servo42C<Box<dyn SerialPort>>> = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
+    //println!("{m:?}");
     thread::spawn(move || {
         let mut time = SystemTime::now();
         let mut update_obj_timer = SystemTime::now() - Duration::from_secs(100);
@@ -69,7 +68,7 @@ pub fn new_thread(
                 state = !state;
 
                 if state {
-                    let _ = m.goto(2.);
+                    let _ = m.goto(60.);
                 } else {
                     let _ = m.goto(0.);
                 }
@@ -80,17 +79,25 @@ pub fn new_thread(
             time = SystemTime::now();
 
             //update
-            let z = m.update(elapsed).unwrap();
+            let _ =m.update(elapsed).map_err(|x| {
+                match x{
+                    MotorError::SerialError(_) => {println!("SerialError")},
+                    MotorError::Stuck => panic!("Stuck"),
+                    MotorError::NegativeResponse => {},
+                }
+             });
+                
+            
             //println!("{}", m.pos-m.obbiettivo);
             cmd_sent += 3.;
 
             //let error = (m.pos-m.obbiettivo)*360.;
-            let error = m.m.read_error().unwrap() as f64;
+            let error = m.m.read_error().unwrap_or(0.) as f64;
             /*println!(
                 "{}            {error}",
                 (error + m.obbiettivo - m.pos) * 360.
             );*/
-            //let error=m.m.read_encoder_value().unwrap()-zero;
+            //let error=m.m.read_encoder_value().unwrap();
             //println!("{error}");
             //send data
             let to_send = MotorState {
@@ -98,8 +105,8 @@ pub fn new_thread(
                 obbiettivo: m.obbiettivo,
                 timing: start.elapsed().unwrap(),
                 cmd_rate: cmd_sent / start.elapsed().unwrap().as_secs_f64(),
-                error: error * 200.,
-                reached: z == UpdateStatus::GetThere,
+                error: error * 360.,
+                reached: true,
             };
             
             data_sender.send(to_send).unwrap(); //if can't sent it's ok to crash

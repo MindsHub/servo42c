@@ -1,5 +1,5 @@
 [workspace]
-members=["motor", "serial","servo42_test", "motor_test", "simulator"]#"arduino_test"
+members=["motor", "serial", "motor_test", "simulator"]#"arduino_test"
 resolver = "2"
 [workspace.dependencies]
 serialport = "4.2.1"

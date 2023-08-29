@@ -1,16 +1,12 @@
 use serial::serialtrait::{MySize, SerialError};
 use serial::serialtrait::{Sendable, Serial};
 
-use super::MotorError::{self, *};
-use super::{ActiveOn, BaudRate, Dir, MotType, Protection, Servo42CTrait, WorkMode};
+use crate::prelude::{*, MotorError::*};
+
 pub struct Servo42C<S: Serial> {
     s: S,
     address: u8,
-    pub microstep: u8,
-    pub kp: u16,
-    pub ki: u16,
-    pub kd: u16,
-    pub acc: u16,
+    microstep: u8,
 }
 
 impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
@@ -18,23 +14,12 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
         Servo42C::<T> {
             address: 0xe0,
             s,
-            kp: 1616, //1616,
-            ki: 288,  //288,
-            kd: 1616, //1616,
-            acc: 286, //286,
             microstep: 16,
         }
     }
 
     fn new(s: T) -> Result<Servo42C<T>, MotorError> {
-        let mut t = Servo42C::empty_new(s);
-        t.stop()?;
-        t.set_kp(t.kp)?;
-        t.set_ki(t.ki)?;
-        t.set_kd(t.kd)?;
-        t.set_acc(t.acc)?;
-        t.set_microstep(t.microstep)?;
-        t.set_maxt(Some(2000))?;
+        let t = Servo42C::empty_new(s);
         Ok(t)
     }
     
@@ -256,7 +241,6 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     fn set_microstep(&mut self, mstep: u8) -> Result<(), MotorError> {
         let ret: u8 = self.send_cmd(0x84, mstep)?;
         if ret == 1 {
-            self.microstep = mstep;
             Ok(())
         } else {
             Err(NegativeResponse)
@@ -326,8 +310,8 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     */
     fn set_lock(&mut self, protection: Protection) -> Result<(), MotorError> {
         let to_send: u8 = match protection {
-            Protection::Protected => 0,
-            Protection::UnProtected => 1,
+            Protection::Protected => 1,
+            Protection::UnProtected => 0,
         };
         let ret: u8 = self.send_cmd(0x88, to_send)?;
         if ret == 1 {
@@ -493,7 +477,6 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     Set the position Kp parameter
     */
     fn set_kp(&mut self, kp: u16) -> Result<(), MotorError> {
-        self.kp = kp;
         let ret: u8 = self.send_cmd(0xA1, kp)?;
         if ret == 1 {
             Ok(())
@@ -505,8 +488,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     Set the position Ki parameter
     */
     fn set_ki(&mut self, ki: u16) -> Result<(), MotorError> {
-        self.ki = ki;
-        let ret: u8 = self.send_cmd(0xA2, self.ki)?;
+        let ret: u8 = self.send_cmd(0xA2, ki)?;
         if ret == 1 {
             Ok(())
         } else {
@@ -517,7 +499,6 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     Set the position Ki parameter
     */
     fn set_kd(&mut self, kd: u16) -> Result<(), MotorError> {
-        self.kd = kd;
         let ret: u8 = self.send_cmd(0xA3, kd)?;
         if ret == 1 {
             Ok(())
@@ -531,8 +512,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     for unknown reasons it resets the position on the motor...
     */
     fn set_acc(&mut self, acc: u16) -> Result<(), MotorError> {
-        self.acc = acc;
-        let ret: u8 = self.send_cmd(0xA4, self.acc)?;
+        let ret: u8 = self.send_cmd(0xA4, acc)?;
         if ret == 1 {
             Ok(())
         } else {
@@ -603,10 +583,24 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     DO NOT USE THIS FUNCTION, IT'S BLOCKING!!
     */
     fn goto(&mut self, speed: u8, dist: u32) -> u8 {
-        let ret: u8 = self.send_cmd(0xFD, (speed, dist)).unwrap();
-        //let stopped: u8= self.read().unwrap();
-        //println!("WTF, received {}", stopped);
-        ret
+        let _: Result<u8, MotorError>=self.send_cmd(0xFD, (speed, dist));
+        let mut z = Err(MotorError::SerialError(SerialError::ConnectionBreak));
+        while let Err(MotorError::SerialError(SerialError::ConnectionBreak)) = z {
+            z= self.read::<u8>();
+            match z{
+                Ok(2)=>{return 0},
+                Ok(0)=>{
+                    //println!("bloccato");
+                    //let _=self.release_lock();},
+                },
+                _=>{},
+            }
+           
+            //println!("WTF, received {}", stopped);
+
+        };
+        //
+        return 0;
     }
 
     fn get_microstep(&self)->u8 {
