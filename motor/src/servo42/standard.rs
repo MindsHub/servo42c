@@ -1,7 +1,7 @@
 use serial::serialtrait::{MySize, SerialError};
 use serial::serialtrait::{Sendable, Serial};
 
-use crate::prelude::{*, MotorError::*};
+use crate::prelude::{MotorError::*, *};
 
 pub struct Servo42C<S: Serial> {
     s: S,
@@ -22,7 +22,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
         let t = Servo42C::empty_new(s);
         Ok(t)
     }
-    
+
     fn send<Data: Sendable>(&mut self, code: u8, data: Data) -> Result<(), MotorError>
     where
         [(); <((u8, u8), (Data, u8))>::SIZE]:,
@@ -576,37 +576,35 @@ impl<T: Serial> Servo42CTrait<T> for Servo42C<T> {
     Stop motor
     */
     fn stop(&mut self) -> Result<(), MotorError> {
-        let _: u8=self.send_cmd(0xF7, ())?;
+        let _: u8 = self.send_cmd(0xF7, ())?;
         Ok(())
     }
     /**
     DO NOT USE THIS FUNCTION, IT'S BLOCKING!!
     */
     fn goto(&mut self, speed: u8, dist: u32) -> u8 {
-        let _: Result<u8, MotorError>=self.send_cmd(0xFD, (speed, dist));
+        let _: Result<u8, MotorError> = self.send_cmd(0xFD, (speed, dist));
         let mut z = Err(MotorError::SerialError(SerialError::ConnectionBreak));
         while let Err(MotorError::SerialError(SerialError::ConnectionBreak)) = z {
-            z= self.read::<u8>();
-            match z{
-                Ok(2)=>{return 0},
-                Ok(0)=>{
+            z = self.read::<u8>();
+            match z {
+                Ok(2) => return 0,
+                Ok(0) => {
                     //println!("bloccato");
                     //let _=self.release_lock();},
-                },
-                _=>{},
+                }
+                _ => {}
             }
-           
-            //println!("WTF, received {}", stopped);
 
-        };
+            //println!("WTF, received {}", stopped);
+        }
         //
-        return 0;
+        0
     }
 
-    fn get_microstep(&self)->u8 {
+    fn get_microstep(&self) -> u8 {
         self.microstep
     }
-    
 }
 
 #[cfg(test)]

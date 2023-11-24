@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use serial::serialtrait::Serial;
 
-use super::{Servo42CTrait, MotorError};
+use super::{MotorError, Servo42CTrait};
 use serial::serialtrait::MySize;
 
 #[derive(Debug)]
@@ -18,9 +18,9 @@ pub struct Servo42CTest<S: Serial> {
     error: f64,
 }
 
-impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
+impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T> {
     fn empty_new(_s: T) -> Self {
-        Servo42CTest{
+        Servo42CTest {
             kp: 1616, //1616,
             ki: 288,  //288,
             kd: 1616, //1616,
@@ -45,11 +45,16 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
         Ok(t)
     }
 
-    fn send<Data: serial::serialtrait::Sendable>(&mut self, _code: u8, _data: Data) -> Result<(), super::MotorError>
+    fn send<Data: serial::serialtrait::Sendable>(
+        &mut self,
+        _code: u8,
+        _data: Data,
+    ) -> Result<(), super::MotorError>
     where
         [(); <((u8, u8), (Data, u8))>::SIZE]:,
         [(); Data::SIZE]:,
-        [(); <(Data, u8)>::SIZE]: {
+        [(); <(Data, u8)>::SIZE]:,
+    {
         unimplemented!()
     }
 
@@ -57,7 +62,8 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
     where
         [(); Res::SIZE]:,
         [(); <(u8, Res)>::SIZE]:,
-        [(); <((u8, Res), u8)>::SIZE]: {
+        [(); <((u8, Res), u8)>::SIZE]:,
+    {
         unimplemented!()
     }
 
@@ -73,15 +79,16 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
 
         [(); Res::SIZE]:,
         [(); <(u8, Res)>::SIZE]:,
-        [(); <((u8, Res), u8)>::SIZE]: {
+        [(); <((u8, Res), u8)>::SIZE]:,
+    {
         unimplemented!()
     }
 
     fn read_encoder_value(&mut self) -> Result<f64, super::MotorError> {
-        let speed_rpm = (self.cur_speed as f64)*30000./(self.microstep as f64)/200.;
+        let speed_rpm = (self.cur_speed as f64) * 30000. / (self.microstep as f64) / 200.;
         //println!("{} {} {}", self.microstep, speed_rpm, speed_rpm/60./1000.);
-        self.cur_pos+=speed_rpm/60./1000.*self.microstep as f64; //Vrpm = (Speed × 30000)/(Mstep × 200)(RPM)   (0.9 degree motor)
-        //println!("{} {} {}", self.cur_pos, speed_rpm ,speed_rpm/60./1000.);
+        self.cur_pos += speed_rpm / 60. / 1000. * self.microstep as f64; //Vrpm = (Speed × 30000)/(Mstep × 200)(RPM)   (0.9 degree motor)
+                                                                         //println!("{} {} {}", self.cur_pos, speed_rpm ,speed_rpm/60./1000.);
         Ok(self.cur_pos)
     }
 
@@ -122,7 +129,7 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
     }
 
     fn set_microstep(&mut self, mstep: u8) -> Result<(), super::MotorError> {
-        self.microstep=mstep;
+        self.microstep = mstep;
         Ok(())
     }
 
@@ -203,19 +210,19 @@ impl<T: Serial> Servo42CTrait<T> for Servo42CTest<T>{
     }
 
     fn set_speed(&mut self, speed: i8) -> Result<(), MotorError> {
-        self.cur_speed=speed;
+        self.cur_speed = speed;
         Ok(())
     }
 
     fn stop(&mut self) -> Result<(), MotorError> {
-        self.cur_speed=0;
+        self.cur_speed = 0;
         Ok(())
     }
 
     fn goto(&mut self, _speed: u8, _dist: u32) -> u8 {
         unimplemented!()
     }
-    fn get_microstep(&self)->u8 {
+    fn get_microstep(&self) -> u8 {
         self.microstep
     }
 }

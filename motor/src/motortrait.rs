@@ -7,7 +7,9 @@ pub enum UpdateStatus {
     Working,
     GetThere,
 }
-pub trait Motor where Self: Sized,
+pub trait Motor
+where
+    Self: Sized,
 {
     type PosUnit;
     type Info: Debug;

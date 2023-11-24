@@ -1,10 +1,9 @@
-
 use ::serial::serialtrait::{Sendable, Serial, SerialError};
 use core::fmt::Debug;
 use serial::serialtrait::MySize;
 
-pub mod test;
 pub mod controllers;
+pub mod test;
 //pub mod serial;
 pub mod standard;
 
@@ -21,9 +20,12 @@ impl From<SerialError> for MotorError {
     }
 }
 
-pub trait Servo42CTrait<T> where Self: Sized,
-    T: Serial{
-    fn empty_new(t: T)->Self;
+pub trait Servo42CTrait<T>
+where
+    Self: Sized,
+    T: Serial,
+{
+    fn empty_new(t: T) -> Self;
     fn new(s: T) -> Result<Self, MotorError>;
 
     fn send<Data: Sendable>(&mut self, code: u8, data: Data) -> Result<(), MotorError>
@@ -91,7 +93,7 @@ pub trait Servo42CTrait<T> where Self: Sized,
     fn stop(&mut self) -> Result<(), MotorError>;
     fn goto(&mut self, speed: u8, dist: u32) -> u8;
 
-    fn get_microstep(&self)->u8;
+    fn get_microstep(&self) -> u8;
 }
 
 #[derive(PartialEq, Eq, Debug)]

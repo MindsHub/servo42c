@@ -1,4 +1,3 @@
-
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
     thread,
@@ -35,13 +34,15 @@ pub fn new_thread(
         .flow_control(serial::standard::FlowControl::None)
         .open()?;
     //let mut cur_builder: Servo42LinearAccBuilder<Box<dyn SerialPort>> = Servo42LinearAccBuilder::new(Box::new(EmptySerial {}));
-    let mut cur_builder: Servo42LinearAccBuilder<Box<dyn SerialPort>> = Servo42LinearAccBuilder::new(s);
+    let mut cur_builder: Servo42LinearAccBuilder<Box<dyn SerialPort>> =
+        Servo42LinearAccBuilder::new(s);
     cur_builder.max_speed = builder.max_speed;
     cur_builder.acc = builder.acc;
-    cur_builder.precision=builder.precision;
-    cur_builder.max_err=builder.max_err;
+    cur_builder.precision = builder.precision;
+    cur_builder.max_err = builder.max_err;
     //builder.s=s;
-    let mut m: Servo42LinearAcc<Box<dyn SerialPort>, Servo42C<Box<dyn SerialPort>>> = cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
+    let mut m: Servo42LinearAcc<Box<dyn SerialPort>, Servo42C<Box<dyn SerialPort>>> =
+        cur_builder.build().map_err(|_| "Impossibile comunicare!")?;
     //println!("{m:?}");
     thread::spawn(move || {
         let mut time = SystemTime::now();
@@ -79,15 +80,14 @@ pub fn new_thread(
             time = SystemTime::now();
 
             //update
-            let _ =m.update(elapsed).map_err(|x| {
-                match x{
-                    MotorError::SerialError(_) => {println!("SerialError")},
-                    MotorError::Stuck => panic!("Stuck"),
-                    MotorError::NegativeResponse => {},
+            let _ = m.update(elapsed).map_err(|x| match x {
+                MotorError::SerialError(_) => {
+                    println!("SerialError")
                 }
-             });
-                
-            
+                MotorError::Stuck => panic!("Stuck"),
+                MotorError::NegativeResponse => {}
+            });
+
             //println!("{}", m.pos-m.obbiettivo);
             cmd_sent += 3.;
 
@@ -108,7 +108,7 @@ pub fn new_thread(
                 error: error * 360.,
                 reached: true,
             };
-            
+
             data_sender.send(to_send).unwrap(); //if can't sent it's ok to crash
         }
     });

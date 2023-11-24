@@ -3,5 +3,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod motortrait;
-mod servo42;
 pub mod prelude;
+mod servo42;

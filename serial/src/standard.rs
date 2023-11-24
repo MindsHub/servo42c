@@ -11,8 +11,8 @@ impl Serial for Box<dyn SerialPort + 'static> {
         loop {
             if let Ok(x) = std::io::Read::read(self, &mut buf[readen..]) {
                 println!("received:");
-                for x in 0..x{
-                    print!("[{:#02x}]", buf[readen+x]);
+                for x in 0..x {
+                    print!("[{:#02x}]", buf[readen + x]);
                 }
                 println!();
                 readen += x;
@@ -33,7 +33,7 @@ impl Serial for Box<dyn SerialPort + 'static> {
 
     fn write(&mut self, buf: &[u8]) -> std::result::Result<(), SerialError> {
         println!("send: ");
-        for x in buf{
+        for x in buf {
             print!("[{:#02x}]", x);
         }
         println!();
