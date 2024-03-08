@@ -3,7 +3,7 @@ members=["motor", "serial", "motor_test", "simulator"]#"arduino_test"
 resolver = "2"
 [workspace.dependencies]
 serialport = "4.2.1"
-embedded-hal = "0.2.7"
+embedded-hal = "1.0.0"
 
 [workspace.dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"

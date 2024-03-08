@@ -15,7 +15,7 @@ bench = false
 panic-halt = "0.2.0"
 ufmt = "0.2.0"
 nb = "1.1.0"
-embedded-hal = "0.2.3"
+embedded-hal = "1.0.0"
 avr-device = "0.5.1"
 motor={path="../motor",  default-features = false, features=["arduino"]}
 bitbang-hal="0.3.2"
