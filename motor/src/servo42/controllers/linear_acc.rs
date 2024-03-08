@@ -5,7 +5,6 @@ use serial::serialtrait::Serial;
 
 use crate::prelude::*;
 
-use libm;
 ///Helper function
 impl<T: Serial, S: Servo42CTrait<T>> Servo42LinearAcc<T, S> {
     fn change_speed(&mut self, quantity: f64) {

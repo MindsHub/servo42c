@@ -4,8 +4,6 @@ use core::time::Duration;
 use crate::prelude::*;
 use serial::serialtrait::Serial;
 
-use super::linear_acc::Servo42LinearAccBuilder;
-
 #[derive(Debug)]
 pub struct Simple<T: Serial, S: Servo42CTrait<T>> {
     //motore incapsulato

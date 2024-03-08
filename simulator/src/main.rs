@@ -18,12 +18,12 @@ impl Default for AppState {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_state::<AppState>()
-        .add_system(loader.in_schedule(OnEnter::<AppState>(AppState::Loading)))
-        .add_system(loader_handler.in_set(OnUpdate(AppState::Loading)))
-        .add_system(setup.in_schedule(OnEnter::<AppState>(AppState::Loaded)))
+        .init_state::<AppState>()
+        .add_systems(OnEnter::<AppState>(AppState::Loading), loader)
+        .add_systems(Update, loader_handler.run_if(in_state(AppState::Loading)))
+        .add_systems(OnEnter::<AppState>(AppState::Loaded), setup)
         //.add_startup(setup)
-        .add_plugin(NoCameraPlayerPlugin)
+        .add_plugins(NoCameraPlayerPlugin)
         .run();
     //let z = OnUpdate(AppState::Loading);
 }
@@ -58,12 +58,12 @@ fn loader(asset_server: Res<AssetServer>, mut commands: Commands) {
         font_size: 60.0,
         color: Color::WHITE,
     };
-    let text_alignment = TextAlignment::Center;
+    let text_alignment = JustifyText::Center;
     // 2d camera
     commands.spawn(Camera2dBundle::default());
     // Demonstrate changing translation
     commands.spawn(Text2dBundle {
-        text: Text::from_section("translation", text_style.clone()).with_alignment(text_alignment),
+        text: Text::from_section("translation", text_style.clone()).with_justify(text_alignment),
 
         ..default()
     });
@@ -76,7 +76,7 @@ fn loader_handler(
     mut app_state: ResMut<NextState<AppState>>,
 ) {
     println!("loading");
-    if asset_server.get_load_state(data.sotto_orto.clone()) != LoadState::Loaded {
+    if asset_server.get_load_state(data.sotto_orto.clone()) != Some(LoadState::Loaded) {
         return;
     }
     app_state.set(AppState::Loaded);
@@ -90,8 +90,8 @@ fn setup(
 ) {
     // plane
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        mesh: meshes.add(Plane3d::default().mesh().size(5.0, 5.0)),
+        material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
         ..default()
     });
 

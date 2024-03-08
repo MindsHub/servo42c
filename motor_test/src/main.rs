@@ -4,7 +4,8 @@ use std::{
 };
 
 use crate::motor_thread::new_thread;
-use eframe::egui::{self, plot::Points};
+use eframe::egui;
+use egui_plot::Points;
 use motor::prelude::*;
 use motor_thread::{EmptySerial, MotorComand, MotorState};
 use serial::standard::{serialport, SerialPort};
@@ -82,7 +83,7 @@ macro_rules! build_parameters {
 
 impl MyEguiApp {
     fn plot(&self, ui: &mut egui::Ui) {
-        use egui::plot::{Line, PlotPoints};
+        use egui_plot::{Line, PlotPoints};
         let pos: PlotPoints = self
             .time_history
             .iter()
@@ -114,7 +115,7 @@ impl MyEguiApp {
         let errors = Line::new(errors);
         let pos = Line::new(pos);
         let obj = Points::new(obj);
-        egui::plot::Plot::new("example_plot")
+        egui_plot::Plot::new("example_plot")
             .height(200.0)
             //.data_aspect(cont as f32)
             .show(ui, |plot_ui| {
