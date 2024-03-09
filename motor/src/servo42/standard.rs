@@ -614,14 +614,17 @@ mod tests {
 
     use serial::test::SerialTest;
     macro_rules! test_motor {
-        ($name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
+        ($fun_name:ident, $name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
             #[test]
-            fn $name(){
+            fn $fun_name(){
                 let mut servo: Servo42C<SerialTest>=Servo42C::empty_new(SerialTest::default());
                 servo.s.add_response(vec![$($val),*], vec![$($ret),*]);
 
                 assert_eq!(servo.$name($($arg),*).unwrap(), $res);
             }
+        };
+        ($name:ident ($($arg:expr),*)->$res:expr, ($($val:literal) *)->($($ret:literal) *)) => {
+            test_motor!($name, $name($($arg),*)->$res, ($($val) *)->($($ret) *));
         };
     }
 
@@ -640,7 +643,8 @@ mod tests {
     test_motor!(set_en_active(ActiveOn::Low)->(), (0xe0 0x85 0x00 0x65)->(0xe0 0x01 0xe1));
     test_motor!(set_direction(Dir::ClockWise)->(), (0xe0 0x86 0x00 0x66)->(0xe0 0x01 0xe1));
     test_motor!(set_autossd(false)->(), (0xe0 0x87 0x00 0x67)->(0xe0 0x01 0xe1));
-    test_motor!(set_lock(Protection::Protected)->(), (0xe0 0x88 0x00 0x68)->(0xe0 0x01 0xe1));
+    test_motor!(set_lock_protected, set_lock(Protection::Protected)->(), (0xe0 0x88 0x01 0x69)->(0xe0 0x01 0xe1));
+    test_motor!(set_lock_unprotected, set_lock(Protection::UnProtected)->(), (0xe0 0x88 0x00 0x68)->(0xe0 0x01 0xe1));
     test_motor!(set_subdivision_interpolation(false)->(), (0xe0 0x89 0x00 0x69)->(0xe0 0x01 0xe1));
     test_motor!(set_baudrate(BaudRate::B57600)->(), (0xe0 0x8A 0x04 0x6e)->(0xe0 0x01 0xe1));
     test_motor!(set_slave_address(2)->(), (0xe0 0x8B 0x02 0x6d)->(0xe0 0x01 0xe1));
