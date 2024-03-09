@@ -1,7 +1,11 @@
-use std::{sync::{Arc, Mutex, MutexGuard}, thread, time::Duration};
+use std::{
+    sync::{Arc, Mutex, MutexGuard},
+    thread,
+    time::Duration,
+};
 
 #[derive(Debug)]
-struct State {
+pub struct State {
     target_x: f64,
     target_y: f64,
     target_z: f64,
@@ -11,8 +15,22 @@ struct State {
     water: bool,
 }
 
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            target_x: 0.0,
+            target_y: 0.0,
+            target_z: 0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            water: false,
+        }
+    }
+}
+
 #[derive(Clone)]
-struct StateHandler {
+pub struct StateHandler {
     state: Arc<Mutex<State>>,
     // TODO add serial object
 }
@@ -34,12 +52,18 @@ macro_rules! mutate_state {
 }
 
 impl StateHandler {
-    fn move_to(&self, x: f64, y: f64, z: f64) {
+    pub fn new() -> StateHandler {
+        StateHandler {
+            state: Arc::new(Mutex::new(State::default())),
+        }
+    }
+
+    pub fn move_to(&self, x: f64, y: f64, z: f64) {
         // TODO send command to Arduino
         mutate_state!(&self.state, target_x = x, target_y = y, target_z = z);
     }
 
-    fn water(&self, duration: Duration) {
+    pub fn water(&self, duration: Duration) {
         // TODO send command to Arduino to turn on water
         mutate_state!(&self.state, water = true);
         thread::sleep(duration);
