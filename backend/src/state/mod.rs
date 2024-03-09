@@ -29,7 +29,7 @@ impl Default for State {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct StateHandler {
     state: Arc<Mutex<State>>,
     // TODO add serial object
